@@ -6,7 +6,7 @@ from guardrails import (
     fetch_goplus_risk,
     calculate_risk_score,
     generate_risk_summary
-)
+    )
 from database import Database
 from anthropic_assistant import get_anthropic_summary
 from config import CONFIG
@@ -135,4 +135,4 @@ class DataFetcher:
         result = result.replace("<b>", "").replace("</b>", "").replace("<code>", "`").replace("</code>", "`")
         catchphrase = self.db.get_personality("catchphrase", "general")
         catchphrase_text = catchphrase["value"] if catchphrase else "Might be alpha, might be catnip!"
-        result = f"{result}\n\n😹 {
+        result = f"{result}\n\n😹"

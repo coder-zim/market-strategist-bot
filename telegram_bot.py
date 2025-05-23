@@ -1,4 +1,3 @@
-# telegram_bot.py
 import logging
 from telegram import Update
 from telegram.ext import (
@@ -30,9 +29,9 @@ class TelegramBot:
             "I sniff contracts, roast charts, and drop meme-worthy alpha.\n"
             "You degen, I judge. That’s the deal. 💩\n\n"
             "👇 Try these:\n"
-            "/fart <contract> - Sniff a contract\n"
-            "/hot - See trending contracts\n"
-            "/help - Get the full scoop"
+            "/start - Passes the gas 🫡"
+            "/fart <CA> - Sniff a contract 🧻\n"
+            "/help - Get the full scoop 💩"
         )
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -41,18 +40,23 @@ class TelegramBot:
         await update.message.reply_text(
             f"📜 How to Use {CONFIG['BOT_NAME']}:\n\n"
             "• /fart <contract> - Analyze a contract address\n"
-            "  Example: /fart 0xabc123...\n"
-            "• /hot - See top trending contracts\n\n"
+            "  Example: /fart 0xabc123...\n\n"
             f"✅ Supported chains: {', '.join(CONFIG['SUPPORTED_CHAINS'])}\n\n"
             "🐾 What you get:\n"
             "• Price, Volume, Liquidity, FDV\n"
-            "• Launchpad vibes (e.g., Pump.fun)\n"
-            "• Chart Health 🟢🟡🔴\n"
-            "• LP Status (🔥 or ☠️)\n"
-            "• Holder & Age Scores\n"
+            "• Chart Health 🟢 🟡 🔴\n"
+            "• LP Status 🔥 (burned), ☠️ (not locked)\n"
+            "• Holders 🟢 (1000+), 🟡 (500+), 🔴 (<500)\n"
+            "• Distribution 🟢🟡🔴 (based on top wallet %)\n"
+            "• Fart-Score 🧻\n"
             "• Risk Analysis (GoPlus)\n"
             "• Meme-worthy hot takes 😹\n\n"
-            "If I say 'Still in the litter box'... your stinker’s too fresh 🧻"
+            "<b>Fart-Score Rankings:</b>\n"
+            "🟢 - Smells like Rotten Eggs 😻\n"
+            "🟡 - Silent, but deadly 🐦‍🔥\n"
+            "🔴 - DO NOT go in there! 🤮\n\n"
+            "If I say 'Still in the litter box'... your stinker is too fresh 🧻",
+            parse_mode=ParseMode.HTML
         )
 
     async def fart(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -72,6 +76,16 @@ class TelegramBot:
         if CONFIG["FARTCAT_X_LAUNCH"]:
             self.x_poster.post_report(address, chain, result)
 
+    async def price(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user_id = update.effective_user.id
+        if not context.args:
+            self.db.log_interaction(user_id, "price", None)
+            await update.message.reply_text("❗ Usage: /price <ticker>")
+            return
+        ticker = context.args[0].strip()
+        self.db.log_interaction(user_id, "price", ticker)
+        await update.message.reply_text(f"Fetching price for {ticker}... (feature not implemented)")
+
     async def hot(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         self.db.log_interaction(user_id, "hot")
@@ -84,18 +98,3 @@ class TelegramBot:
             response += f"• {contract['address']} ({contract['chain'].title()}): Queried {contract['query_count']} times\n"
         response += "\nUse /fart <contract> to sniff one!"
         await update.message.reply_text(response, parse_mode=ParseMode.HTML)
-
-if __name__ == "__main__":
-    import asyncio
-    from telegram.ext import ApplicationBuilder
-    app = ApplicationBuilder().token(CONFIG["TELEGRAM_BOT_TOKEN"]).build()
-
-    from telegram_bot import TelegramBot
-    bot = TelegramBot()
-    app.add_handler(CommandHandler("start", bot.start))
-    app.add_handler(CommandHandler("help", bot.help_command))
-    app.add_handler(CommandHandler("fart", bot.fart))
-    app.add_handler(CommandHandler("hot", bot.hot))
-
-    print("Bot polling...")
-    asyncio.run(app.run_polling())

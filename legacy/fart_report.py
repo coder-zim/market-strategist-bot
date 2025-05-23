@@ -1,5 +1,5 @@
 # fart_report.py
-from guardrails import fetch_goplus_risk, calculate_risk_score, fetch_bubblemaps_info, generate_risk_summary
+from legacy.guardrails import fetch_goplus_risk, calculate_risk_score, fetch_bubblemaps_info, generate_risk_summary
 from moralis_fetcher import get_token_holders_evm, get_token_holder_stats_solana
 from config import CONFIG
 import requests

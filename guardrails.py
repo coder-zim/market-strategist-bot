@@ -24,7 +24,9 @@ def fetch_goplus_risk(chain, address):
         if not res.ok:
             logger.warning(f"GoPlus returned non-OK response for {address}: {res.status_code}")
             return None, "API error"
-        data = res.json().get("result", {}).get(address.lower())
+        json_data = res.json()
+        logger.debug(f"🔍 GoPlus raw response for {address} on {chain}: {json_data}")
+        data = json_data.get("result", {}).get(address.lower())
         if not data:
             logger.warning(f"⚠️ No GoPlus data returned for {address} on {chain}")
         return data, None if data else ("No data", None)

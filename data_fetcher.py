@@ -1,12 +1,10 @@
 # data_fetcher.py
-
 import logging
 import requests
 import random
 from guardrails import (
     fetch_goplus_risk,
     calculate_risk_score,
-    fetch_token_sniffer_score,
     fetch_bubblemaps_info,
     compose_fart_report
 )
@@ -86,13 +84,10 @@ class DataFetcher:
 
             goplus_data, _ = fetch_goplus_risk(chain, address)
             goplus_score, goplus_flags = calculate_risk_score(goplus_data, chain, address)
-            sniffer_data, _ = fetch_token_sniffer_score(chain, address)
             bubble_link, _ = fetch_bubblemaps_info(address)
-            fart_report = compose_fart_report(address, chain, goplus_data, goplus_score, goplus_flags, sniffer_data, bubble_link, chart_url)
+            fart_report = compose_fart_report(address, chain, goplus_data, goplus_score, goplus_flags, None, bubble_link, chart_url)
 
             anthropic_summary = get_anthropic_summary(address, chain) if CONFIG["ANTHROPIC_API_KEY"] else "No hot take today, catnip ran out!"
-
-            # Add personality
             catchphrase = self.db.get_personality("catchphrase", "risky" if goplus_score <= 1 else "general")
             catchphrase_text = catchphrase["value"] if catchphrase else "Might be alpha, might be catnip!"
 
@@ -125,7 +120,6 @@ class DataFetcher:
 
     def process(self, question, chain):
         result = self.fetch_basic_info(question, chain)
-        # For web UI, strip HTML and add personality
         result = result.replace("<b>", "").replace("</b>", "").replace("<code>", "`").replace("</code>", "`")
         catchphrase = self.db.get_personality("catchphrase", "general")
         catchphrase_text = catchphrase["value"] if catchphrase else "Might be alpha, might be catnip!"

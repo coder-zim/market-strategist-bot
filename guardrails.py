@@ -6,8 +6,6 @@ from dotenv import load_dotenv
 load_dotenv()
 import hashlib
 import time
-import requests
-import logging
 from config import CONFIG
 
 logger = logging.getLogger(__name__)
@@ -19,6 +17,7 @@ GOPLUS_BASE_URL = os.getenv("GOPLUS_BASE_URL", "https://api.gopluslabs.io/api/v1
 TOKEN_SNIFFER_BASE = "https://tokensniffer.com/token"
 LUNARCRUSH_BASE = "https://api.lunarcrush.com/v2"
 BUBBLEMAPS_PLACEHOLDER = "https://app.bubblemaps.io"
+
 
 def get_goplus_token():
     global _cached_token, _token_expiry
@@ -42,7 +41,7 @@ def get_goplus_token():
         token = res.json().get("data", {}).get("token")
         if token:
             _cached_token = token
-            _token_expiry = time.time() + 3600  # valid for ~1 hour
+            _token_expiry = time.time() + 3600
             return token
         else:
             logger.warning(f"Failed to retrieve GoPlus token: {res.text}")
@@ -51,13 +50,17 @@ def get_goplus_token():
         logger.error(f"Error fetching GoPlus token: {e}")
         return None
 
+
 def fetch_goplus_risk(chain, address):
     try:
+        if chain.lower() in ["solana", "sui"]:
+            logger.info(f"Skipping GoPlus for unsupported chain: {chain}")
+            return None, f"GoPlus not available for {chain}"
+
         chain_map = {"ethereum": "1", "base": "8453", "abstract": "1"}
         chain_id = chain_map.get(chain.lower())
         if not chain_id:
-            logger.info(f"GoPlus unsupported chain: {chain}")
-            return None, f"GoPlus unsupported for {chain.title()}"
+            return None, f"Unsupported chain: {chain}"
 
         token = get_goplus_token()
         if not token:
@@ -72,17 +75,15 @@ def fetch_goplus_risk(chain, address):
         res = requests.get(url, headers=headers, timeout=10)
         logger.debug(f"GoPlus Response ({chain} - {address}): {res.text}")
         if not res.ok:
-            logger.warning(f"GoPlus returned non-OK response for {address}: {res.status_code}")
             return None, "API error"
 
         json_data = res.json()
         data = json_data.get("result", {}).get(address.lower())
-        if not data:
-            logger.warning(f"⚠️ No GoPlus data returned for {address} on {chain}")
-        return data, None if data else ("No data", None)
+        return data, None if data else (None, "No GoPlus data")
     except Exception as e:
         logger.exception("Exception during fetch_goplus_risk")
         return None, str(e)
+
 
 def calculate_risk_score(goplus_data, chain, address):
     score = 3
@@ -100,6 +101,7 @@ def calculate_risk_score(goplus_data, chain, address):
         flags.append("Can Reclaim Ownership")
     return max(score, 0), flags
 
+
 def fetch_token_sniffer_score(chain, address):
     if chain.lower() not in ["ethereum", "base"]:
         return None, "TokenSniffer supports only Ethereum and Base"
@@ -115,17 +117,20 @@ def fetch_token_sniffer_score(chain, address):
     except Exception as e:
         return None, str(e)
 
+
 def fetch_lunarcrush_info(address):
     try:
         return {"engagement": "unknown", "rank": "unknown"}, None
     except Exception as e:
         return None, str(e)
 
+
 def fetch_bubblemaps_info(address):
     try:
         return f"{BUBBLEMAPS_PLACEHOLDER}?token={address}", None
     except Exception as e:
         return None, str(e)
+
 
 def generate_risk_summary(score, flags):
     if score == 3:
@@ -135,6 +140,7 @@ def generate_risk_summary(score, flags):
     if score == 1:
         return f"🚨 Risky contract: {', '.join(flags)}"
     return f"💀 Extremely risky: {', '.join(flags)}"
+
 
 def compose_fart_report(address, chain, goplus, goplus_score, goplus_flags, sniff_data, bubble_link, chart_url):
     goplus_summary = generate_risk_summary(goplus_score, goplus_flags)

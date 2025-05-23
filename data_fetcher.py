@@ -119,13 +119,45 @@ class DataFetcher:
             return "abstract"
         return None
 
+    def fetch_moralis_fallback(self, address, chain):
+        metadata = moralis.get_sol_token_metadata(address) or {}
+        price_data = moralis.get_sol_token_price(address) or {}
+        holders_data = moralis.get_sol_token_holders(address) or {}
+        name = metadata.get("name", "Unknown")
+        symbol = metadata.get("symbol", "???")
+        price = price_data.get("price", "N/A")
+        holders = len(holders_data.get("result", []))
+        holder_score = rank_holders(holders)
+        health = "🟡"
+        dist_score = "🟡"
+        fart_score = get_fart_score(health, holder_score, "🟡", dist_score)
+        chart_url = f"https://birdeye.so/token/{address}?chain={chain}"
+        summary = get_anthropic_summary(address, chain) if CONFIG["ANTHROPIC_API_KEY"] else "No hot take today, catnip ran out!"
+        result = (
+            f"<b>Contract:</b>\n<code>{address}</code>\n\n"
+            f"<b>{name} ${symbol}</b>\n"
+            f"<b>Price:</b> ${price}\n\n"
+            f"<b>FART REPORT 💨</b>\n"
+            f"Chart Health: {health}\n"
+            f"Holders: {holder_score} ({holders:,})\n"
+            f"Distribution: {dist_score}\n"
+            f"Fart-Score: {fart_score}\n"
+            f"Link: <a href=\"{chart_url}\">Birdeye</a>\n\n"
+            f"<b>🐾 {CONFIG['BOT_NAME']}'s Hot Take:</b>\n{summary}\n\n"
+            f"😹 Might be alpha, might be catnip!"
+        )
+        self.db.save_contract_data(address, chain, result)
+        return result
+
     def fetch_basic_info(self, address, chain):
+        logger.warning(f"FETCH STARTED FOR: {chain} - {address}")
         cached = self.db.get_contract_data(address, chain)
         if cached and "data" in cached:
             logger.info(f"Using cached data for {address} on {chain}")
             return cached["data"]
         try:
             if chain == "solana":
+                logger.warning("🔥 FORCING MORALIS FALLBACK FOR SOLANA")
                 metadata = moralis.get_sol_token_metadata(address) or {}
                 price_data = moralis.get_sol_token_price(address) or {}
                 holders_data = moralis.get_sol_token_holders(address) or {}
@@ -214,6 +246,7 @@ class DataFetcher:
             result = f"⚠️ Failed to fetch token info: {e}"
             self.db.save_contract_data(address, chain, result)
             return result
+
 
     def process(self, question, chain):
         result = self.fetch_basic_info(question, chain)

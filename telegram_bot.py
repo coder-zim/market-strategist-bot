@@ -101,3 +101,15 @@ class TelegramBot:
             response += f"• {contract['address']} ({contract['chain'].title()}): Queried {contract['query_count']} times\n"
         response += "\nUse /fart <contract> to sniff one!"
         await update.message.reply_text(response, parse_mode=ParseMode.HTML)
+
+if __name__ == "__main__":
+    from telegram.ext import ApplicationBuilder
+
+    app = ApplicationBuilder().token(CONFIG["TELEGRAM_BOT_TOKEN"]).build()
+
+    bot = TelegramBot()
+    app.add_handler(CommandHandler("start", bot.start))
+    app.add_handler(CommandHandler("help", bot.help_command))
+    app.add_handler(CommandHandler("fart", bot.fart))
+
+    app.run_polling()

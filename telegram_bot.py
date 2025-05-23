@@ -1,3 +1,4 @@
+#telegram_bot.py
 import logging
 from telegram import Update
 from telegram.ext import (
@@ -24,21 +25,25 @@ class TelegramBot:
         fun_fact = self.db.get_personality("fun_fact", "intro")
         fun_fact_text = fun_fact["value"] if fun_fact else "Fartcat’s got a nose for scams and a heart for degens!"
         await update.message.reply_text(
-            f"😼 Yo, I’m {CONFIG['BOT_NAME']}\n"
-            f"{fun_fact_text}\n"
-            "I sniff contracts, roast charts, and drop meme-worthy alpha.\n"
-            "You degen, I judge. That’s the deal. 💩\n\n"
-            "👇 Try these:\n"
-            "/start - Passes the gas 🫡"
-            "/fart <CA> - Sniff a contract 🧻\n"
-            "/help - Get the full scoop 💩"
+            f"PURRR-FECTO! 🐱\n"
+            f"{fun_fact_text}\n\n"
+            "👇 Select a chain to start sniffing:\n\n"
+            "• Ethereum 🧠\n"
+            "• Solana 💊\n"
+            "• SUI 💦\n"
+            "• Base 🔵\n"
+            "• Abstract 🧪\n\n"
+            "Then drop a contract address and I’ll do my thing.\n"
+            "💨 I might help. I might just fart on it. No promises."
         )
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         self.db.log_interaction(user_id, "help")
         await update.message.reply_text(
-            f"📜 How to Use {CONFIG['BOT_NAME']}:\n\n"
+            f"📜 How to Use {CONFIG['BOT_NAME']}:
+
+"
             "• /fart <contract> - Analyze a contract address\n"
             "  Example: /fart 0xabc123...\n\n"
             f"✅ Supported chains: {', '.join(CONFIG['SUPPORTED_CHAINS'])}\n\n"
@@ -55,7 +60,7 @@ class TelegramBot:
             "🟢 - Smells like Rotten Eggs 😻\n"
             "🟡 - Silent, but deadly 🐦‍🔥\n"
             "🔴 - DO NOT go in there! 🤮\n\n"
-            "If I say 'Still in the litter box'... your stinker is too fresh 🧻",
+            "If I say 'Still in the litter box'... your stinker’s too fresh 🧻",
             parse_mode=ParseMode.HTML
         )
 

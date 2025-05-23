@@ -1,6 +1,6 @@
+# data_fetcher.py
 import logging
 import requests
-import random
 from database import Database
 from anthropic_assistant import get_anthropic_summary
 from config import CONFIG
@@ -26,31 +26,6 @@ def fetch_goplus_risk(chain, address):
         return data, None if data else (None, "No GoPlus data")
     except Exception as e:
         return None, str(e)
-
-def calculate_risk_score(goplus_data, chain, address):
-    score = 3
-    flags = []
-    if not goplus_data:
-        return 0, ["No GoPlus data"]
-    if goplus_data.get("is_open_source") == "0":
-        score -= 1
-        flags.append("Not Open Source")
-    if goplus_data.get("is_honeypot") == "1":
-        score -= 1
-        flags.append("Honeypot Risk")
-    if goplus_data.get("can_take_back_ownership") == "1":
-        score -= 1
-        flags.append("Can Reclaim Ownership")
-    return max(score, 0), flags
-
-def generate_risk_summary(score, flags):
-    if score == 3:
-        return "✅ No major red flags. Smart contract appears healthy."
-    if score == 2:
-        return f"⚠️ Minor concerns: {', '.join(flags)}"
-    if score == 1:
-        return f"🚨 Risky contract: {', '.join(flags)}"
-    return f"💀 Extremely risky: {', '.join(flags)}"
 
 def rank_chart_health(liquidity, volume, fdv):
     score = 0
@@ -92,6 +67,38 @@ def get_fart_score(chart, holders, lp, dist):
         return "🟡 - Silent, but deadly 🐦‍🔥"
     return "🟢 - Smells like Rotten Eggs 😻"
 
+def format_goplus_scores(data):
+    if not data:
+        return "❓ No contract analysis available."
+    owner_percent = float(data.get("owner_percent", 100))
+    slippage_mod = data.get("slippage_modifiable", "0")
+    buy_tax = float(data.get("buy_tax", 0))
+    sell_tax = float(data.get("sell_tax", 0))
+    holders = int(data.get("holder_count", 0))
+
+    owner_score = "🟢" if owner_percent <= 5 else "🟡" if owner_percent <= 15 else "🔴"
+    tax_score = "🟢" if buy_tax <= 5 and sell_tax <= 5 else "🟡" if buy_tax <= 10 and sell_tax <= 10 else "🔴"
+    slip_score = "🔴" if slippage_mod == "1" else "🟢"
+
+    return (
+        f"<b>Contract Analysis:</b>\n"
+        f"• Owner %: {owner_score} ({owner_percent:.1f}%)\n"
+        f"• Buy/Sell Tax: {tax_score} ({buy_tax:.1f}% / {sell_tax:.1f}%)\n"
+        f"• Slippage Modifiable: {slip_score}\n"
+        f"• Reported Holders: {holders:,}\n"
+    )
+
+def fallback_fart_report(pair):
+    name = f"{pair['baseToken']['name']} ${pair['baseToken']['symbol']}"
+    chart_url = f"https://dexscreener.com/{pair['chainId'].lower()}/{pair['pairAddress']}"
+    return (
+        f"<b>{name}</b>\n"
+        f"📊 Token detected, but some data couldn't be sniffed.\n"
+        f"🔗 <a href=\"{chart_url}\">Dexscreener Chart</a>\n"
+        "💩 Fartcat couldn't get the full stench... maybe it's hiding something?\n"
+        "Try again later or DYOR 👃"
+    )
+
 class DataFetcher:
     def __init__(self):
         self.db = Database()
@@ -126,10 +133,10 @@ class DataFetcher:
                 data = search_res.json()
                 pairs = data.get("pairs", [])
                 pair = next((p for p in pairs if p["chainId"].lower() == chain.lower()), pairs[0] if pairs else None)
-            if not pair:
-                result = "❌ Token not found on Dexscreener."
-                self.db.save_contract_data(address, chain, result)
-                return result
+                if not pair:
+                    result = fallback_fart_report(data.get("pairs", [{}])[0]) if data.get("pairs") else "❌ Token not found on Dexscreener."
+                    self.db.save_contract_data(address, chain, result)
+                    return result   
 
             name = f"{pair['baseToken']['name']} ${pair['baseToken']['symbol']}"
             price = pair.get("priceUsd", "N/A")
@@ -141,22 +148,15 @@ class DataFetcher:
             fdv = f"${fdv_val:,}"
             lp_raw = pair.get("liquidityLocked")
             lp_locked = rank_lp_status(lp_raw is True)
-            age_obj = pair.get("age") or {}
-            age_days = age_obj.get("days", 0)
-            age_str = age_obj.get("human", f"{age_days}d")
-            age_score = "🟢" if age_days > 30 else "🟡" if age_days >= 7 else "🔴"
-            holders = int(pair.get("holders") or 0)
-            holder_score = rank_holders(holders)
             chart_chain = pair.get("chainId", chain).lower()
             chart_url = f"https://dexscreener.com/{chart_chain}/{address}"
             health = rank_chart_health(liquidity_val, volume_val, fdv_val)
             dist_score = rank_distribution(float(pair.get("topHolderPercent", 100)))
-            fart_score = get_fart_score(health, holder_score, lp_locked, dist_score)
+            fart_score = get_fart_score(health, "🟡", lp_locked, dist_score)
             goplus_data, _ = fetch_goplus_risk(chain, address)
-            goplus_score, goplus_flags = calculate_risk_score(goplus_data, chain, address)
-            risk_summary = generate_risk_summary(goplus_score, goplus_flags)
+            goplus_report = format_goplus_scores(goplus_data)
             anthropic_summary = get_anthropic_summary(address, chain) if CONFIG["ANTHROPIC_API_KEY"] else "No hot take today, catnip ran out!"
-            catchphrase = self.db.get_personality("catchphrase", "risky" if goplus_score <= 1 else "general")
+            catchphrase = self.db.get_personality("catchphrase", "risky" if fart_score.startswith("🔴") else "general")
             catchphrase_text = catchphrase["value"] if catchphrase else "Might be alpha, might be catnip!"
 
             result = (
@@ -167,11 +167,9 @@ class DataFetcher:
                 f"<b>FDV:</b> {fdv}\n\n"
                 f"<b>FART REPORT 💨</b>\n"
                 f"Chart Health: {health}\n"
-                f"Holders: {holder_score} ({holders:,})\n"
                 f"Distribution: {dist_score}\n"
                 f"Fart-Score: {fart_score}\n"
-                f"Risk Analysis: {risk_summary}\n"
-                f"Age: {age_score} ({age_str})\n"
+                f"{goplus_report}\n"
                 f"Link: <a href=\"{chart_url}\">Dexscreener</a>\n\n"
                 f"<b>🐾 {CONFIG['BOT_NAME']}'s Hot Take:</b>\n{anthropic_summary}\n\n"
                 f"😹 {catchphrase_text}"

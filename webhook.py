@@ -1,5 +1,6 @@
 # webhook.py
 import logging
+import asyncio
 from fastapi import FastAPI, Request
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler
@@ -31,13 +32,14 @@ async def on_startup():
         await app.state.application.bot.set_webhook(webhook_url)
         logger.info(f"Webhook set to {webhook_url}")
     else:
-        await app.state.application.start_polling()
+        asyncio.create_task(app.state.application.run_polling())
         logger.info("Running in polling mode for local testing")
 
 @app.on_event("shutdown")
 async def on_shutdown():
     if CONFIG["ENVIRONMENT"] != "production":
-        await app.state.application.stop_polling()
+        await app.state.application.shutdown()
+
 
 @app.post("/webhook")
 async def webhook(request: Request):

@@ -1,14 +1,9 @@
 # telegram_bot.py
-
 import logging
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder, CommandHandler,
-    ContextTypes
-)
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from telegram.constants import ParseMode
 from data_fetcher import DataFetcher
-from price_fetcher import get_price_summary
 from database import Database
 from config import CONFIG
 from x_poster import XPoster
@@ -27,13 +22,12 @@ class TelegramBot:
         fun_fact = self.db.get_personality("fun_fact", "intro")
         fun_fact_text = fun_fact["value"] if fun_fact else "Fartcat’s got a nose for scams and a heart for degens!"
         await update.message.reply_text(
-            f"😼 Yo, I’m {CONFIG['BOT_NAME']}.\n"
+            f"😼 Yo, I’m {CONFIG['BOT_NAME']}!\n"
             f"{fun_fact_text}\n"
             "I sniff contracts, roast charts, and drop meme-worthy alpha.\n"
             "You degen, I judge. That’s the deal. 💩\n\n"
             "👇 Try these:\n"
             "/fart <contract> - Sniff a contract\n"
-            "/price <ticker> - Check a coin’s price\n"
             "/hot - See trending contracts\n"
             "/help - Get the full scoop"
         )
@@ -45,8 +39,6 @@ class TelegramBot:
             f"📜 How to Use {CONFIG['BOT_NAME']}:\n\n"
             "• /fart <contract> - Analyze a contract address\n"
             "  Example: /fart 0xabc123...\n"
-            "• /price <ticker> - Get coin price\n"
-            "  Example: /price btc\n"
             "• /hot - See top trending contracts\n\n"
             f"✅ Supported chains: {', '.join(CONFIG['SUPPORTED_CHAINS'])}\n\n"
             "🐾 What you get:\n"
@@ -55,7 +47,7 @@ class TelegramBot:
             "• Chart Health 🟢🟡🔴\n"
             "• LP Status (🔥 or ☠️)\n"
             "• Holder & Age Scores\n"
-            "• Risk Analysis (GoPlus, TokenSniffer)\n"
+            "• Risk Analysis (GoPlus)\n"
             "• Meme-worthy hot takes 😹\n\n"
             "If I say 'Still in the litter box'... your stinker’s too fresh 🧻"
         )
@@ -72,24 +64,13 @@ class TelegramBot:
         if not chain:
             await update.message.reply_text("😿 Couldn't guess the chain. Try another contract.")
             return
-        result = self.agent.fetch_basic_info(address, chain)
-        await update.message.reply_text(result, parse_mode=ParseMode.HTML, disable_web_page_preview=False)
+        result = self.agent.process(address, chain)
+        await update.message.reply_text(result["summary"], parse_mode=ParseMode.HTML, disable_web_page_preview=False)
         if CONFIG["FARTCAT_X_LAUNCH"]:
-            self.x_poster.post_report(address, chain, result)
+            self.x_poster.post_report(address, chain, result["summary"])
 
     async def price(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        if not context.args:
-            self.db.log_interaction(user_id, "price", None)
-            await update.message.reply_text("❗ Usage: /price <ticker>")
-            return
-        ticker = context.args[0].strip()
-        self.db.log_interaction(user_id, "price", ticker)
-        result = get_price_summary(ticker)
-        if result:
-            await update.message.reply_text(result)
-        else:
-            await update.message.reply_text("😿 Couldn't find that coin. Try another ticker.")
+        await update.message.reply_text("/price is currently disabled.")
 
     async def hot(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
@@ -106,7 +87,6 @@ class TelegramBot:
 
 if __name__ == "__main__":
     import asyncio
-    from telegram.ext import ApplicationBuilder
     app = ApplicationBuilder().token(CONFIG["TELEGRAM_BOT_TOKEN"]).build()
 
     from telegram_bot import TelegramBot

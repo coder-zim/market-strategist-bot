@@ -1,5 +1,4 @@
 # webhook.py
-
 import logging
 from fastapi import FastAPI, Request
 from telegram import Update

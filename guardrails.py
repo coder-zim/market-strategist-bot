@@ -4,28 +4,78 @@ import requests
 import logging
 from dotenv import load_dotenv
 load_dotenv()
+import hashlib
+import time
+import requests
+import logging
+from config import CONFIG
 
 logger = logging.getLogger(__name__)
+
+_cached_token = None
+_token_expiry = 0
 
 GOPLUS_BASE_URL = os.getenv("GOPLUS_BASE_URL", "https://api.gopluslabs.io/api/v1/token_security")
 TOKEN_SNIFFER_BASE = "https://tokensniffer.com/token"
 LUNARCRUSH_BASE = "https://api.lunarcrush.com/v2"
 BUBBLEMAPS_PLACEHOLDER = "https://app.bubblemaps.io"
 
+def get_goplus_token():
+    global _cached_token, _token_expiry
+    if _cached_token and time.time() < _token_expiry:
+        return _cached_token
+
+    try:
+        app_key = CONFIG["GOPLUS_APP_KEY"]
+        app_secret = CONFIG["GOPLUS_APP_SECRET"]
+        ts = int(time.time())
+        sign_input = f"{app_key}{ts}{app_secret}"
+        sign = hashlib.sha1(sign_input.encode("utf-8")).hexdigest()
+
+        payload = {
+            "app_key": app_key,
+            "sign": sign,
+            "time": ts
+        }
+
+        res = requests.post("https://api.gopluslabs.io/api/v1/token", json=payload)
+        token = res.json().get("data", {}).get("token")
+        if token:
+            _cached_token = token
+            _token_expiry = time.time() + 3600  # valid for ~1 hour
+            return token
+        else:
+            logger.warning(f"Failed to retrieve GoPlus token: {res.text}")
+            return None
+    except Exception as e:
+        logger.error(f"Error fetching GoPlus token: {e}")
+        return None
+
 def fetch_goplus_risk(chain, address):
     try:
         chain_map = {"ethereum": "1", "base": "8453", "abstract": "1"}
         chain_id = chain_map.get(chain.lower())
         if not chain_id:
-            return None, "Unsupported chain"
-        url = f"{GOPLUS_BASE_URL}/{chain_id}?contract_addresses={address}"
-        headers = {"accept": "application/json"}
+            logger.info(f"GoPlus unsupported chain: {chain}")
+            return None, f"GoPlus unsupported for {chain.title()}"
+
+        token = get_goplus_token()
+        if not token:
+            return None, "Unable to retrieve GoPlus token"
+
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {token}"
+        }
+
+        url = f"https://api.gopluslabs.io/api/v1/token_security/{chain_id}?contract_addresses={address}"
         res = requests.get(url, headers=headers, timeout=10)
+        logger.debug(f"GoPlus Response ({chain} - {address}): {res.text}")
         if not res.ok:
             logger.warning(f"GoPlus returned non-OK response for {address}: {res.status_code}")
             return None, "API error"
+
         json_data = res.json()
-        logger.debug(f"🔍 GoPlus raw response for {address} on {chain}: {json_data}")
         data = json_data.get("result", {}).get(address.lower())
         if not data:
             logger.warning(f"⚠️ No GoPlus data returned for {address} on {chain}")

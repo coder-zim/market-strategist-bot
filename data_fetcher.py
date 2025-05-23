@@ -4,8 +4,10 @@ import requests
 from database import Database
 from anthropic_assistant import get_anthropic_summary
 from config import CONFIG
+from moralis_fetcher import MoralisFetcher
 
 logger = logging.getLogger(__name__)
+moralis = MoralisFetcher()
 
 def fetch_goplus_risk(chain, address):
     try:
@@ -123,6 +125,36 @@ class DataFetcher:
             logger.info(f"Using cached data for {address} on {chain}")
             return cached["data"]
         try:
+            if chain == "solana":
+                metadata = moralis.get_sol_token_metadata(address) or {}
+                price_data = moralis.get_sol_token_price(address) or {}
+                holders_data = moralis.get_sol_token_holders(address) or {}
+                name = metadata.get("name", "Unknown")
+                symbol = metadata.get("symbol", "???")
+                price = price_data.get("price", "N/A")
+                holders = len(holders_data.get("result", []))
+                holder_score = rank_holders(holders)
+                health = "🟡"
+                dist_score = "🟡"
+                fart_score = get_fart_score(health, holder_score, "🟡", dist_score)
+                chart_url = f"https://birdeye.so/token/{address}?chain=solana"
+                summary = get_anthropic_summary(address, chain) if CONFIG["ANTHROPIC_API_KEY"] else "No hot take today, catnip ran out!"
+                result = (
+                    f"<b>Contract:</b>\n<code>{address}</code>\n\n"
+                    f"<b>{name} ${symbol}</b>\n"
+                    f"<b>Price:</b> ${price}\n\n"
+                    f"<b>FART REPORT 💨</b>\n"
+                    f"Chart Health: {health}\n"
+                    f"Holders: {holder_score} ({holders:,})\n"
+                    f"Distribution: {dist_score}\n"
+                    f"Fart-Score: {fart_score}\n"
+                    f"Link: <a href=\"{chart_url}\">Birdeye</a>\n\n"
+                    f"<b>🐾 {CONFIG['BOT_NAME']}'s Hot Take:</b>\n{summary}\n\n"
+                    f"😹 Might be alpha, might be catnip!"
+                )
+                self.db.save_contract_data(address, chain, result)
+                return result
+
             url = f"https://api.dexscreener.com/latest/dex/pairs/{chain}/{address}"
             res = requests.get(url, timeout=10)
             data = res.json()
@@ -155,7 +187,7 @@ class DataFetcher:
             fart_score = get_fart_score(health, "🟡", lp_locked, dist_score)
             goplus_data, _ = fetch_goplus_risk(chain, address)
             goplus_report = format_goplus_scores(goplus_data)
-            anthropic_summary = get_anthropic_summary(address, chain) if CONFIG["ANTHROPIC_API_KEY"] else "No hot take today, catnip ran out!"
+            summary = get_anthropic_summary(address, chain) if CONFIG["ANTHROPIC_API_KEY"] else "No hot take today, catnip ran out!"
             catchphrase = self.db.get_personality("catchphrase", "risky" if fart_score.startswith("🔴") else "general")
             catchphrase_text = catchphrase["value"] if catchphrase else "Might be alpha, might be catnip!"
 
@@ -171,7 +203,7 @@ class DataFetcher:
                 f"Fart-Score: {fart_score}\n"
                 f"{goplus_report}\n"
                 f"Link: <a href=\"{chart_url}\">Dexscreener</a>\n\n"
-                f"<b>🐾 {CONFIG['BOT_NAME']}'s Hot Take:</b>\n{anthropic_summary}\n\n"
+                f"<b>🐾 {CONFIG['BOT_NAME']}'s Hot Take:</b>\n{summary}\n\n"
                 f"😹 {catchphrase_text}"
             )
 

@@ -41,9 +41,7 @@ class TelegramBot:
         user_id = update.effective_user.id
         self.db.log_interaction(user_id, "help")
         await update.message.reply_text(
-            f"📜 How to Use {CONFIG['BOT_NAME']}:
-
-"
+            f"📜 How to Use {CONFIG['BOT_NAME']}\n\n:"
             "• /fart <contract> - Analyze a contract address\n"
             "  Example: /fart 0xabc123...\n\n"
             f"✅ Supported chains: {', '.join(CONFIG['SUPPORTED_CHAINS'])}\n\n"

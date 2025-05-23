@@ -1,6 +1,8 @@
 # webhook.py
 import logging
+import threading
 import asyncio
+import uvicorn
 from fastapi import FastAPI, Request
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler
@@ -32,14 +34,18 @@ async def on_startup():
         await app.state.application.bot.set_webhook(webhook_url)
         logger.info(f"Webhook set to {webhook_url}")
     else:
-        asyncio.create_task(app.state.application.run_polling())
-        logger.info("Running in polling mode for local testing")
+        def run_bot():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(app.state.application.initialize())
+            loop.run_until_complete(app.state.application.start())
+            loop.run_forever()
+        threading.Thread(target=run_bot).start()
 
 @app.on_event("shutdown")
 async def on_shutdown():
     if CONFIG["ENVIRONMENT"] != "production":
         await app.state.application.shutdown()
-
 
 @app.post("/webhook")
 async def webhook(request: Request):
@@ -51,5 +57,4 @@ async def webhook(request: Request):
     return {"status": "ok"}
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

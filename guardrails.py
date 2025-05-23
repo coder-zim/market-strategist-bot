@@ -1,87 +1,11 @@
 # guardrails.py
-import os
-import requests
 import logging
-import hashlib
-import time
 from config import CONFIG
 
 logger = logging.getLogger(__name__)
 
-_cached_token = None
-_token_expiry = 0
 
-GOPLUS_BASE_URL = os.getenv("GOPLUS_BASE_URL", "https://api.gopluslabs.io/api/v1/token_security")
-BUBBLEMAPS_PLACEHOLDER = "https://app.bubblemaps.io"
-
-
-def get_goplus_token():
-    global _cached_token, _token_expiry
-    if _cached_token and time.time() < _token_expiry:
-        return _cached_token
-
-    try:
-        app_key = CONFIG["GOPLUS_APP_KEY"]
-        app_secret = CONFIG["GOPLUS_APP_SECRET"]
-        ts = int(time.time())
-        sign_input = f"{app_key}{ts}{app_secret}"
-        sign = hashlib.sha1(sign_input.encode("utf-8")).hexdigest()
-
-        payload = {
-            "app_key": app_key,
-            "sign": sign,
-            "time": ts
-        }
-
-        res = requests.post("https://api.gopluslabs.io/api/v1/token", json=payload)
-        token = res.json().get("data", {}).get("token")
-        if token:
-            _cached_token = token
-            _token_expiry = time.time() + 3600
-            return token
-        else:
-            logger.warning(f"Failed to retrieve GoPlus token: {res.text}")
-            return None
-    except Exception as e:
-        logger.error(f"Error fetching GoPlus token: {e}")
-        return None
-
-
-def fetch_goplus_risk(chain, address):
-    try:
-        if chain.lower() in ["solana", "sui"]:
-            logger.info(f"Skipping GoPlus for unsupported chain: {chain}")
-            return None, f"GoPlus not available for {chain}"
-
-        chain_map = {"ethereum": "1", "base": "8453", "abstract": "1"}
-        chain_id = chain_map.get(chain.lower())
-        if not chain_id:
-            return None, f"Unsupported chain: {chain}"
-
-        token = get_goplus_token()
-        if not token:
-            return None, "Unable to retrieve GoPlus token"
-
-        headers = {
-            "accept": "application/json",
-            "Authorization": f"Bearer {token}"
-        }
-
-        url = f"https://api.gopluslabs.io/api/v1/token_security/{chain_id}?contract_addresses={address}"
-        res = requests.get(url, headers=headers, timeout=10)
-        logger.debug(f"GoPlus Response ({chain} - {address}): {res.text}")
-        if not res.ok:
-            return None, "API error"
-
-        json_data = res.json()
-        data = json_data.get("result", {}).get(address.lower())
-        return data, None if data else (None, "No GoPlus data")
-    except Exception as e:
-        logger.exception("Exception during fetch_goplus_risk")
-        return None, str(e)
-
-
-def calculate_risk_score(goplus_data, chain, address):
+def calculate_risk_score(goplus_data):
     score = 3
     flags = []
     if not goplus_data:
@@ -98,13 +22,6 @@ def calculate_risk_score(goplus_data, chain, address):
     return max(score, 0), flags
 
 
-def fetch_bubblemaps_info(address):
-    try:
-        return f"{BUBBLEMAPS_PLACEHOLDER}?token={address}", None
-    except Exception as e:
-        return None, str(e)
-
-
 def generate_risk_summary(score, flags):
     if score == 3:
         return "✅ No major red flags. Smart contract appears healthy."
@@ -113,3 +30,17 @@ def generate_risk_summary(score, flags):
     if score == 1:
         return f"🚨 Risky contract: {', '.join(flags)}"
     return f"💀 Extremely risky: {', '.join(flags)}"
+
+
+def compose_fart_report(address, chain, goplus_data, goplus_score, goplus_flags, chart_url):
+    goplus_summary = generate_risk_summary(goplus_score, goplus_flags)
+    report = f"""
+<b>🔬 Fartcat Security Check</b>
+
+<b>Risk Summary:</b>
+{goplus_summary}
+
+<b>🧠 More Tools:</b>
+• <a href=\"{chart_url}\">Dexscreener Chart</a>
+    """
+    return report.strip()

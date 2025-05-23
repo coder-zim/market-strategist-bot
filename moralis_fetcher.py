@@ -24,7 +24,7 @@ def get_token_price_evm(address, chain="eth"):
         logger.error(f"Moralis EVM price fetch failed: {e}")
         return None, str(e)
 
-def get_token_holders_evm(address, chain="eth"):
+def get_token_holder_stats_evm(address, chain="eth"):
     try:
         url = f"{MORALIS_EVM_BASE}/erc20/{address}/holders?chain={chain}"
         res = requests.get(url, headers=HEADERS, timeout=10)

@@ -1,5 +1,4 @@
 # web_ui.py
-
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -15,7 +14,6 @@ app = FastAPI()
 agent = DataFetcher()
 db = Database()
 
-# Initialize Telegram bot
 bot = TelegramBot()
 telegram_app = (
     ApplicationBuilder()
@@ -37,12 +35,20 @@ async def startup_event():
         webhook_url = f"{CONFIG['WEBHOOK_URL']}/webhook"
         await telegram_app.bot.set_webhook(webhook_url)
     else:
-        await telegram_app.start_polling()
+        import threading
+        import asyncio
+        def run_bot():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(telegram_app.initialize())
+            telegram_app.run_polling()
+            loop.run_forever()
+        threading.Thread(target=run_bot).start()
 
 @app.on_event("shutdown")
 async def shutdown_event():
     if CONFIG["ENVIRONMENT"] != "production":
-        await telegram_app.stop_polling()
+        await telegram_app.shutdown()
 
 @app.post("/webhook")
 async def webhook(request: Request):

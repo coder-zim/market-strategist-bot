@@ -1,7 +1,10 @@
 # telegram_bot.py
 import logging
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import (
+    ApplicationBuilder, CommandHandler,
+    ContextTypes
+)
 from telegram.constants import ParseMode
 from data_fetcher import DataFetcher
 from database import Database
@@ -22,7 +25,7 @@ class TelegramBot:
         fun_fact = self.db.get_personality("fun_fact", "intro")
         fun_fact_text = fun_fact["value"] if fun_fact else "Fartcat’s got a nose for scams and a heart for degens!"
         await update.message.reply_text(
-            f"😼 Yo, I’m {CONFIG['BOT_NAME']}!\n"
+            f"😼 Yo, I’m {CONFIG['BOT_NAME']}\n"
             f"{fun_fact_text}\n"
             "I sniff contracts, roast charts, and drop meme-worthy alpha.\n"
             "You degen, I judge. That’s the deal. 💩\n\n"
@@ -64,13 +67,10 @@ class TelegramBot:
         if not chain:
             await update.message.reply_text("😿 Couldn't guess the chain. Try another contract.")
             return
-        result = self.agent.process(address, chain)
-        await update.message.reply_text(result["summary"], parse_mode=ParseMode.HTML, disable_web_page_preview=False)
+        result = self.agent.fetch_basic_info(address, chain)
+        await update.message.reply_text(result, parse_mode=ParseMode.HTML, disable_web_page_preview=False)
         if CONFIG["FARTCAT_X_LAUNCH"]:
-            self.x_poster.post_report(address, chain, result["summary"])
-
-    async def price(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        await update.message.reply_text("/price is currently disabled.")
+            self.x_poster.post_report(address, chain, result)
 
     async def hot(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
@@ -87,6 +87,7 @@ class TelegramBot:
 
 if __name__ == "__main__":
     import asyncio
+    from telegram.ext import ApplicationBuilder
     app = ApplicationBuilder().token(CONFIG["TELEGRAM_BOT_TOKEN"]).build()
 
     from telegram_bot import TelegramBot
@@ -94,7 +95,6 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("start", bot.start))
     app.add_handler(CommandHandler("help", bot.help_command))
     app.add_handler(CommandHandler("fart", bot.fart))
-    app.add_handler(CommandHandler("price", bot.price))
     app.add_handler(CommandHandler("hot", bot.hot))
 
     print("Bot polling...")

@@ -1,5 +1,4 @@
 # database.py
-
 import logging
 import datetime
 import random

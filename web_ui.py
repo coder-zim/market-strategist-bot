@@ -1,17 +1,57 @@
-#web_ui.py
+# web_ui.py
 
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from data_fetcher import MarketStrategist
-from db_logger import log_query
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler
+from telegram_bot import TelegramBot
+from data_fetcher import DataFetcher
+from database import Database
+from config import CONFIG
 
 app = FastAPI()
-agent = MarketStrategist()
+agent = DataFetcher()
+db = Database()
+
+# Initialize Telegram bot
+bot = TelegramBot()
+telegram_app = (
+    ApplicationBuilder()
+    .token(CONFIG["TELEGRAM_BOT_TOKEN"])
+    .build()
+)
+telegram_app.add_handler(CommandHandler("start", bot.start))
+telegram_app.add_handler(CommandHandler("help", bot.help_command))
+telegram_app.add_handler(CommandHandler("fart", bot.fart))
+telegram_app.add_handler(CommandHandler("price", bot.price))
+telegram_app.add_handler(CommandHandler("hot", bot.hot))
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+@app.on_event("startup")
+async def startup_event():
+    if CONFIG["ENVIRONMENT"] == "production":
+        webhook_url = f"{CONFIG['WEBHOOK_URL']}/webhook"
+        await telegram_app.bot.set_webhook(webhook_url)
+    else:
+        await telegram_app.start_polling()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    if CONFIG["ENVIRONMENT"] != "production":
+        await telegram_app.stop_polling()
+
+@app.post("/webhook")
+async def webhook(request: Request):
+    if CONFIG["ENVIRONMENT"] != "production":
+        return {"status": "ignored", "message": "Webhook ignored in local mode"}
+    update = await request.json()
+    update = Update.de_json(update, telegram_app.bot)
+    await telegram_app.process_update(update)
+    return {"status": "ok"}
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
@@ -22,10 +62,10 @@ async def ask(request: Request, question: str = Form(...), chain: str = Form(...
     try:
         response = agent.process(question, chain)
         summary = response["summary"]
-        log_query(agent_name=agent.name, question=f"{chain} - {question}", response=summary)
+        db.log_query(agent_name=agent.name, question=f"{chain} - {question}", response=summary)
     except Exception as e:
         summary = f"Error processing request: {str(e)}"
-        log_query(agent_name=agent.name, question=f"{chain} - {question}", response=summary)
+        db.log_query(agent_name=agent.name, question=f"{chain} - {question}", response=summary)
 
     return templates.TemplateResponse("index.html", {
         "request": request,

@@ -1,3 +1,5 @@
+# price_fetcher.py
+  
 from pycoingecko import CoinGeckoAPI
 
 cg = CoinGeckoAPI()

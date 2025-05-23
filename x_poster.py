@@ -1,55 +1,68 @@
 # x_poster.py
-import os
+
+import logging
 import tweepy
-from dotenv import load_dotenv
 import time
+import threading
+import re
+from config import CONFIG
 
-load_dotenv()
+logger = logging.getLogger(__name__)
 
-API_KEY = os.getenv("TWITTER_API_KEY")
-API_SECRET = os.getenv("TWITTER_API_SECRET")
-ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
-ACCESS_SECRET = os.getenv("TWITTER_ACCESS_SECRET")
-BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN")
+class XPoster:
+    def __init__(self):
+        self.api = None
+        self.client = None
+        if CONFIG["FARTCAT_X_LAUNCH"] and CONFIG["TWITTER_API_KEY"]:
+            auth = tweepy.OAuth1UserHandler(
+                CONFIG["TWITTER_API_KEY"],
+                CONFIG["TWITTER_API_SECRET"],
+                CONFIG["TWITTER_ACCESS_TOKEN"],
+                CONFIG["TWITTER_ACCESS_SECRET"],
+            )
+            self.api = tweepy.API(auth)
+            self.client = tweepy.Client(
+                bearer_token=CONFIG.get("TWITTER_BEARER_TOKEN"),
+                consumer_key=CONFIG["TWITTER_API_KEY"],
+                consumer_secret=CONFIG["TWITTER_API_SECRET"],
+                access_token=CONFIG["TWITTER_ACCESS_TOKEN"],
+                access_token_secret=CONFIG["TWITTER_ACCESS_SECRET"],
+            )
+            threading.Thread(target=self.start_mention_listener, daemon=True).start()
+            logger.info("X integration initialized")
+        else:
+            logger.info("X integration disabled")
 
-auth = tweepy.OAuth1UserHandler(API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_SECRET)
-api = tweepy.API(auth)
-
-def tweet_from_fartcat(message: str):
-    try:
-        api.update_status(status=message)
-        print("🐦 Tweeted successfully.")
-    except Exception as e:
-        print(f"❌ Tweet failed: {e}")
-
-def start_mention_listener():
-    print("🐦 Fartcat X listener is on standby for tags...")
-
-    client = tweepy.Client(bearer_token=BEARER_TOKEN)
-
-    bot_username = "fartcat_bot"
-    last_seen_id = None
-
-    while True:
+    def post_report(self, address, chain, report):
+        if not self.api or not CONFIG["FARTCAT_X_LAUNCH"]:
+            logger.info("X posting skipped (disabled or not configured)")
+            return
         try:
-            mentions = client.get_users_mentions(id=client.get_user(username=bot_username).data.id)
-            if mentions.data:
-                for mention in reversed(mentions.data):
-                    if last_seen_id is None or mention.id > last_seen_id:
-                        text = mention.text.lower()
-                        if "sniff" in text or "chart" in text:
-                            reply = f"💨 Yo @{mention.author_id}, you rang? Fartcat’s sniffing charts soon. Stay tuned."
-                            client.create_tweet(text=reply, in_reply_to_tweet_id=mention.id)
-                            print("🐾 Replied to a mention.")
-                        last_seen_id = mention.id
+            clean_text = re.sub(r'<[^>]+>', '', report)
+            summary = f"{CONFIG['BOT_NAME']} sniffed {address} on {chain.title()}! 💨\n{clean_text[:200]}...\nSniff it: https://t.me/FartcatBot"
+            self.api.update_status(summary)
+            logger.info(f"Posted to X for {address} on {chain}")
         except Exception as e:
-            print(f"❌ Error during mention check: {e}")
+            logger.error(f"Error posting to X: {e}")
 
-        time.sleep(30)
+    def start_mention_listener(self):
+        logger.info("🐦 Fartcat X listener is on standby for tags...")
+        bot_username = "fartcat_bot"
+        last_seen_id = None
 
-if __name__ == "__main__":
-    print("🐦 Fartcat’s Twitter engine is gassed up and ready.")
-    if os.getenv("FARTCAT_X_LAUNCH", "false").lower() == "true":
-        start_mention_listener()
-    else:
-        print("🚫 X listener is disabled. Set FARTCAT_X_LAUNCH=true to enable it.")
+        while True:
+            try:
+                bot_id = self.client.get_user(username=bot_username).data.id
+                mentions = self.client.get_users_mentions(id=bot_id)
+                if mentions.data:
+                    for mention in reversed(mentions.data):
+                        if last_seen_id is None or mention.id > last_seen_id:
+                            text = mention.text.lower()
+                            if "sniff" in text or "chart" in text:
+                                reply = f"💨 Yo @{mention.author_id}, you rang? Fartcat’s sniffing charts soon. Stay tuned."
+                                self.client.create_tweet(text=reply, in_reply_to_tweet_id=mention.id)
+                                logger.info("🐾 Replied to a mention.")
+                            last_seen_id = mention.id
+            except Exception as e:
+                logger.error(f"❌ Error during mention check: {e}")
+            time.sleep(30)

@@ -1,7 +1,11 @@
+# guardrails.py
 import os
 import requests
+import logging
 from dotenv import load_dotenv
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 GOPLUS_BASE_URL = os.getenv("GOPLUS_BASE_URL", "https://api.gopluslabs.io/api/v1/token_security")
 TOKEN_SNIFFER_BASE = "https://tokensniffer.com/token"
@@ -14,14 +18,18 @@ def fetch_goplus_risk(chain, address):
         chain_id = chain_map.get(chain.lower())
         if not chain_id:
             return None, "Unsupported chain"
-        url = f"{GOPLUS_BASE_URL}?chain_id={chain_id}&contract_addresses={address}"
+        url = f"{GOPLUS_BASE_URL}/{chain_id}?contract_addresses={address}"
         headers = {"accept": "application/json"}
         res = requests.get(url, headers=headers, timeout=10)
         if not res.ok:
+            logger.warning(f"GoPlus returned non-OK response for {address}: {res.status_code}")
             return None, "API error"
         data = res.json().get("result", {}).get(address.lower())
+        if not data:
+            logger.warning(f"⚠️ No GoPlus data returned for {address} on {chain}")
         return data, None if data else ("No data", None)
     except Exception as e:
+        logger.exception("Exception during fetch_goplus_risk")
         return None, str(e)
 
 def calculate_risk_score(goplus_data, chain, address):

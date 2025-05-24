@@ -8,25 +8,27 @@ from config import CONFIG
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def run_bot():
-    bot_instance = TelegramBot()
+async def main():
+    bot = TelegramBot()
     app = (
         ApplicationBuilder()
         .token(CONFIG["TELEGRAM_BOT_TOKEN"])
         .build()
     )
 
-    app.add_handler(CommandHandler("start", bot_instance.start))
-    app.add_handler(CommandHandler("help", bot_instance.help_command))
-    app.add_handler(CommandHandler("fart", bot_instance.fart))
-    app.add_handler(CommandHandler("price", bot_instance.price))
-    app.add_handler(CommandHandler("hot", bot_instance.hot))
+    app.add_handler(CommandHandler("start", bot.start))
+    app.add_handler(CommandHandler("help", bot.help_command))
+    app.add_handler(CommandHandler("fart", bot.fart))
+    app.add_handler(CommandHandler("price", bot.price))
+    app.add_handler(CommandHandler("hot", bot.hot))
 
     await app.bot.delete_webhook(drop_pending_updates=True)
     await app.initialize()
     await app.start()
-    await app.run_polling()
-    await app.idle()  # 👈 THIS KEEPS THE BOT RUNNING FOREVER
+    
+    print("✅ Bot is polling... waiting for updates...")
+    while True:
+        await asyncio.sleep(60)
 
 if __name__ == "__main__":
-    asyncio.run(run_bot())
+    asyncio.run(main())

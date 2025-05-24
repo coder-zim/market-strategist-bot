@@ -1,4 +1,4 @@
-#anthropic_assistant.py
+# anthropic_assistant.py
 import os
 import anthropic
 
@@ -6,7 +6,7 @@ client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 def get_anthropic_summary(address, chain):
     try:
-        prompt = f"You're a witty blockchain watchdog. Give a short, humorous one-liner about this contract on {chain.title()}: {address}. Take the role of a talking dog who has a reputation for farting as a super power.  Make humor about this and be original and only give a response that is 1 or 2 sentences long."
+        prompt = f"You're a witty blockchain watchdog. Give a 1 to 2 sentence long, humorous response about this memecoin contract on {chain.title()}: {address}."
         msg = client.messages.create(
             model="claude-3-opus-20240229",
             max_tokens=50,
@@ -16,4 +16,4 @@ def get_anthropic_summary(address, chain):
         )
         return msg.content[0].text
     except Exception as e:
-        return f"No data found, and Anthropic failed: {str(e)}"
+        return f"No data found: Anthropic-ball-drop {str(e)}"

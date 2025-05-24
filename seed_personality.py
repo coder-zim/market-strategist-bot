@@ -8,6 +8,8 @@ from database import Database
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+
+
 try:
     logger.info("Starting personality seeding...")
     db = Database()

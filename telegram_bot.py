@@ -26,8 +26,7 @@ class TelegramBot:
         fun_fact = self.db.get_personality("fun_fact", "intro")
         fun_fact_text = fun_fact["value"] if fun_fact else "Fartdog’s nose is locked on your wallet. Let’s sniff some contracts!"
         await update.message.reply_text(
-            f"GOOD BOY! 🐶\n"
-            f"{fun_fact_text}\n\n"
+            f"🎈WOOF-WOOF! GOOD BOY! 🐶\n"
             "👇 Here’s where I sniff around:\n\n"
             "• Ethereum 🧠\n"
             "• Solana 💊\n"

@@ -79,29 +79,34 @@ class DataFetcher:
             return cached["data"]
 
         try:
-            # Step 1: Search first to get correct pairAddress
             search_url = f"https://api.dexscreener.com/latest/dex/search/?q={address}"
             res = requests.get(search_url, timeout=10)
+            logger.info(f"Search URL hit: {search_url}")
             data = res.json()
             pairs = data.get("pairs", [])
+            logger.info(f"Pairs found: {len(pairs)}")
             pair = None
             for p in pairs:
+                logger.debug(f"Checking pair: {p.get('pairAddress')} / baseToken: {p.get('baseToken', {}).get('address')}")
                 if address.lower() in (p.get("pairAddress", "").lower(), p.get("baseToken", {}).get("address", "").lower()):
                     pair = p
                     break
 
             if not pair:
+                logger.error("No matching pair found in search")
                 return "❌ Token not found on Dexscreener."
 
             pair_address = pair["pairAddress"]
             chart_chain = pair.get("chainId", chain).lower()
+            logger.info(f"Fetching from pair endpoint: {chart_chain}/{pair_address}")
             url = f"https://api.dexscreener.com/latest/dex/pairs/{chart_chain}/{pair_address}"
             res = requests.get(url, timeout=10)
             data = res.json()
             pair = data.get("pair")
 
             if not pair:
-                return "❌ Token not found on Dexscreener."
+                logger.error("Pair endpoint returned no data")
+                return "❌ Token not found on Dexscreener (pair endpoint)."
 
             name = f"{pair['baseToken']['name']} ${pair['baseToken']['symbol']}"
             price = pair.get("priceUsd", "N/A")

@@ -26,7 +26,7 @@ class TelegramBot:
         fun_fact = self.db.get_personality("fun_fact", "intro")
         fun_fact_text = fun_fact["value"] if fun_fact else "Fartdog’s nose is locked on your wallet. Let’s sniff some contracts!"
         await update.message.reply_text(
-            f"🎈WOOF-WOOF! GOOD BOY! 🐶\n"
+            "🐶WOOF-WOOF! GOOD BOY!🎈\n"
             "👇 Here’s where I sniff around:\n\n"
             "• Ethereum 🧠\n"
             "• Solana 💊\n"
@@ -35,7 +35,7 @@ class TelegramBot:
             "• Abstract 🧪\n\n"
             "Enter /fart followed by a contract address and I’ll fetch the alpha. 🦴\n"
             "💨 I might help. I might just lift a leg on it. No promises."
-        )
+            )
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id

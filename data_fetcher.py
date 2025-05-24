@@ -16,7 +16,7 @@ def fetch_goplus_risk(chain, address):
         chain_id = chain_map.get(chain.lower())
         if not chain_id:
             return None, f"Unsupported chain: {chain}"
-        token = CONFIG["GOPLUS_APP_KEY"]
+        
         url = f"https://api.gopluslabs.io/api/v1/token_security/{chain_id}?contract_addresses={address}"
         headers = {"accept": "application/json"}
         res = requests.get(url, headers=headers, timeout=10)

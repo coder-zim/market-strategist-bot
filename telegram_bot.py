@@ -94,20 +94,20 @@ class TelegramBot:
         response += "\nUse /fart <contract> to sniff one!"
         await update.message.reply_text(response, parse_mode=ParseMode.HTML)
 
-if __name__ == "__main__":
-    import asyncio
+# if __name__ == "__main__":
+#     import asyncio
 
-    async def main():
-        app = ApplicationBuilder().token(CONFIG["TELEGRAM_BOT_TOKEN"]).build()
-        bot = TelegramBot()
-        app.add_handler(CommandHandler("start", bot.start))
-        app.add_handler(CommandHandler("help", bot.help_command))
-        app.add_handler(CommandHandler("fart", bot.fart))
-        app.add_handler(CommandHandler("price", bot.price))
-        app.add_handler(CommandHandler("hot", bot.hot))
-        await app.initialize()
-        await app.start()
-        await app.updater.start_polling()
-        await app.updater.idle()
+#     async def main():
+#         app = ApplicationBuilder().token(CONFIG["TELEGRAM_BOT_TOKEN"]).build()
+#         bot = TelegramBot()
+#         app.add_handler(CommandHandler("start", bot.start))
+#         app.add_handler(CommandHandler("help", bot.help_command))
+#         app.add_handler(CommandHandler("fart", bot.fart))
+#         app.add_handler(CommandHandler("price", bot.price))
+#         app.add_handler(CommandHandler("hot", bot.hot))
+#         await app.initialize()
+#         await app.start()
+#         await app.updater.start_polling()
+#         await app.updater.idle()
 
-    asyncio.run(main())
+#     asyncio.run(main())

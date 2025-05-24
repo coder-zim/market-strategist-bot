@@ -1,4 +1,3 @@
-# anthropic_assistant.py
 import os
 import anthropic
 
@@ -8,7 +7,7 @@ def get_anthropic_summary(address, chain):
     try:
         prompt = f"You're a witty blockchain watchdog. Give a 1 to 2 sentence long, humorous response about this memecoin contract on {chain.title()}: {address}."
         msg = client.messages.create(
-            model="claude-3-opus-20240229",
+            model="claude-3.5-sonnet",
             max_tokens=50,
             temperature=0.8,
             system="You are Fartdog, a crypto watchdog with a nose for risk and a bark full of sass.",

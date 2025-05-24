@@ -1,4 +1,3 @@
-# moralis_fetcher.py
 import requests
 from config import CONFIG
 

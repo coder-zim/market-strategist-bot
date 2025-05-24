@@ -100,7 +100,7 @@ class DataFetcher:
             risk_summary = "💀 Extremely risky: No GoPlus data" if not goplus_data else "🔒 Risk data present"
 
             short_summary = get_anthropic_summary(address, chain)[:200]
-            catchphrase_text = "Might be alpha, might be dognip!"  # Hardcoded since no DB
+            catchphrase_text = "Might be alpha, might be dognip!"
 
             result = (
                 f"<b>Contract:</b>\n<code>{address}</code>\n\n"

@@ -1,0 +1,83 @@
+services:
+  - type: worker
+    name: fartdog-bot
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python telegram_bot.py
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        value: 7901149869:AAGcXpRyrh0r1WWTxOEDEjWY2nK6IJhX5qQ
+      - key: ANTHROPIC_API_KEY
+        value: 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
+      - key: TWITTER_API_KEY
+        value: bEM4dU4wZEpBeXlxOEFuM1hURXA6MTpjaQ
+      - key: TWITTER_API_SECRET
+        value: dVUSWFFLsupjTpvG7E1VECg5YTg8CEdVsLre-bKQI-Wxk3Gh91
+      - key: TWITTER_ACCESS_TOKEN
+        sync: false  # Set manually in Render
+      - key: TWITTER_ACCESS_SECRET
+        sync: false  # Set manually in Render
+      - key: FARTDOG_X_LAUNCH
+        value: true
+      - key: ENVIRONMENT
+        value: production
+      - key: ETHERSCAN_API_KEY
+        value: METT822U9MB2D7G3P8XTI5ZHDAYWCSJXSH
+      - key: SOLSCAN_API_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVhdGVkQXQiOjE3NDY4MTU3ODk5NzgsImVtYWlsIjoicmFuZDBtLmxhYnp6ekBnbWFpbC5jb20iLCJhY3Rpb24iOiJ0b2tlbi1hcGkiLCJhcGlWZXJzaW9uIjoidjIiLCJpYXQiOjE3NDY4MTU3ODl9.1Bp-2QPf0r83hQf6s5gK9pzmKr9sLjW5ZchjEXe9xIE
+      - key: BASESCAN_API_KEY
+        value: VJ8SYYVG5ETKB5QXVUKXX86H3TATRH32R3
+      - key: BIRDEYE_API_KEY
+        value: ebf9033a3b554d08b1bbfad9cb2cd48e
+      - key: MORALIS_API_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjM3NDg2NjBkLWFkNzQtNDg3Yi1hNzFlLWE3Y2I5NzNhYmI5YSIsIm9yZ0lkIjoiNDQ4NzYwIiwidXNlcklkIjoiNDYxNzI1IiwidHlwZUlkIjoiZTE2YmJhN2EtNTEyZC00NWY2LWJmZDktZDEwMWJhYzlmODY1IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NDgwMDkyMTUsImV4cCI6NDkwMzc2OTIxNX0.jwBcM-XG3-3VLZiX4NoRWAVuN6bGNWpxK7QHuv9RoGU
+      - key: GOPLUS_BASE_URL
+        value: https://api.gopluslabs.io/api/v1/token_security
+      - key: GOPLUS_APP_KEY
+        value: mBOMg20QW11BbtyH4Zh0
+      - key: GOPLUS_APP_SECRET
+        value: V6aRfxlPJwN3ViJSIFSCdxPvneajuJsh
+      - key: BITQUERY_API_KEY
+        value: ory_at_lamaM_nSe6qGFi4Yg91SNaL1hjegzGucbe_XOsfDvLc.3kQX1S_LhWz96Ux_7X8A070AoLwYPVKkO29oISfs7LE
+  - type: worker
+    name: fartdog-x-poster
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python x_poster.py
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        value: 7901149869:AAGcXpRyrh0r1WWTxOEDEjWY2nK6IJhX5qQ
+      - key: ANTHROPIC_API_KEY
+        value: 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
+      - key: TWITTER_API_KEY
+        value: bEM4dU4wZEpBeXlxOEFuM1hURXA6MTpjaQ
+      - key: TWITTER_API_SECRET
+        value: dVUSWFFLsupjTpvG7E1VECg5YTg8CEdVsLre-bKQI-Wxk3Gh91
+      - key: TWITTER_ACCESS_TOKEN
+        sync: false
+      - key: TWITTER_ACCESS_SECRET
+        sync: false
+      - key: FARTDOG_X_LAUNCH
+        value: true
+      - key: ENVIRONMENT
+        value: production
+      - key: ETHERSCAN_API_KEY
+        value: METT822U9MB2D7G3P8XTI5ZHDAYWCSJXSH
+      - key: SOLSCAN_API_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjcmVhdGVkQXQiOjE3NDY4MTU3ODk5NzgsImVtYWlsIjoicmFuZDBtLmxhYnp6ekBnbWFpbC5jb20iLCJhY3Rpb24iOiJ0b2tlbi1hcGkiLCJhcGlWZXJzaW9uIjoidjIiLCJpYXQiOjE3NDY4MTU3ODl9.1Bp-2QPf0r83hQf6s5gK9pzmKr9sLjW5ZchjEXe9xIE
+      - key: BASESCAN_API_KEY
+        value: VJ8SYYVG5ETKB5QXVUKXX86H3TATRH32R3
+      - key: BIRDEYE_API_KEY
+        value: ebf9033a3b554d08b1bbfad9cb2cd48e
+      - key: MORALIS_API_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjM3NDg2NjBkLWFkNzQtNDg3Yi1hNzFlLWE3Y2I5NzNhYmI5YSIsIm9yZ0lkIjoiNDQ4NzYwIiwidXNlcklkIjoiNDYxNzI1IiwidHlwZUlkIjoiZTE2YmJhN2EtNTEyZC00NWY2LWJmZDktZDEwMWJhYzlmODY1IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NDgwMDkyMTUsImV4cCI6NDkwMzc2OTIxNX0.jwBcM-XG3-3VLZiX4NoRWAVuN6bGNWpxK7QHuv9RoGU
+      - key: GOPLUS_BASE_URL
+        value: https://api.gopluslabs.io/api/v1/token_security
+      - key: GOPLUS_APP_KEY
+        value: mBOMg20QW11BbtyH4Zh0
+      - key: GOPLUS_APP_SECRET
+        value: V6aRfxlPJwN3ViJSIFSCdxPvneajuJsh
+      - key: BITQUERY_API_KEY
+        value: ory_at_lamaM_nSe6qGFi4Yg91SNaL1hjegzGucbe_XOsfDvLc.3kQX1S_LhWz96Ux_7X8A070AoLwYPVKkO29oISfs7LE

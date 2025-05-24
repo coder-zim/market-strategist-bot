@@ -4,6 +4,7 @@ import re
 from config import CONFIG
 from data_fetcher import DataFetcher
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename='x_poster.log')
 logger = logging.getLogger(__name__)
 
 class XPoster:
@@ -48,13 +49,11 @@ class XPoster:
             mentions = self.api.mentions_timeline(count=10)
             for mention in mentions:
                 text = mention.text.lower()
-                # Look for chain and address in mention
                 for chain in CONFIG["SUPPORTED_CHAINS"]:
                     if chain in text:
-                        # Extract potential address
                         words = text.split()
                         for word in words:
-                            if self.fetcher.guess_chain(word):  # Validate address format
+                            if self.fetcher.guess_chain(word):
                                 logger.info(f"Processing mention: {word} on {chain}")
                                 report = self.fetcher.process(word, chain)["summary"]
                                 self.post_report(word, chain, report)
@@ -62,9 +61,12 @@ class XPoster:
         except Exception as e:
             logger.error(f"Error checking X mentions: {e}")
 
-def monitor_x():
+def main():
     poster = XPoster()
     while True:
         poster.check_mentions()
         import time
-        time.sleep(60)  # Check every minute
+        time.sleep(60)
+
+if __name__ == "__main__":
+    main()

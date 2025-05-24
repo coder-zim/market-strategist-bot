@@ -43,7 +43,7 @@ class TelegramBot:
             return
         chain, address = context.args[0], context.args[1]
         if chain.lower() not in CONFIG["SUPPORTED_CHAINS"]:
-            await update.message.reply_text(f"Unsupported chain. Use: {', '.join(CONFIG['SUPPORTED_CHAINS'])}")
+            await update.message.reply_text(f"Unsupported chain. Trouble sniffing? Try: {', '.join(CONFIG['SUPPORTED_CHAINS'])}")
             return
         try:
             result = self.fetcher.fetch_basic_info(address, chain)

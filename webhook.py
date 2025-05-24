@@ -8,25 +8,24 @@ from config import CONFIG
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-bot_instance = TelegramBot()
+async def run_bot():
+    bot_instance = TelegramBot()
+    app = (
+        ApplicationBuilder()
+        .token(CONFIG["TELEGRAM_BOT_TOKEN"])
+        .build()
+    )
 
-application = (
-    ApplicationBuilder()
-    .token(CONFIG["TELEGRAM_BOT_TOKEN"])
-    .build()
-)
+    app.add_handler(CommandHandler("start", bot_instance.start))
+    app.add_handler(CommandHandler("help", bot_instance.help_command))
+    app.add_handler(CommandHandler("fart", bot_instance.fart))
+    app.add_handler(CommandHandler("price", bot_instance.price))
+    app.add_handler(CommandHandler("hot", bot_instance.hot))
 
-application.add_handler(CommandHandler("start", bot_instance.start))
-application.add_handler(CommandHandler("help", bot_instance.help_command))
-application.add_handler(CommandHandler("fart", bot_instance.fart))
-application.add_handler(CommandHandler("price", bot_instance.price))
-application.add_handler(CommandHandler("hot", bot_instance.hot))
-
-async def main():
-    await application.bot.delete_webhook(drop_pending_updates=True)
-    await application.initialize()
-    await application.start()
-    await application.run_polling()  # 👈 this is the critical line that keeps it running
+    await app.bot.delete_webhook(drop_pending_updates=True)
+    await app.initialize()
+    await app.start()
+    await app.run_polling()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(run_bot())

@@ -35,5 +35,11 @@ if __name__ == "__main__":
     if CONFIG["ENVIRONMENT"] == "production":
         uvicorn.run("webhook:app", host="0.0.0.0", port=8000)
     else:
-        asyncio.run(app.bot.delete_webhook(drop_pending_updates=True))
-        asyncio.run(application.run_polling())
+        async def run_bot():
+            await application.bot.delete_webhook(drop_pending_updates=True)
+            await application.initialize()
+            await application.start()
+            await application.updater.start_polling()
+            await application.updater.idle()
+
+        asyncio.run(run_bot())

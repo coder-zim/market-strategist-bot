@@ -24,7 +24,7 @@ CONFIG = {
     "TWITTER_ACCESS_TOKEN": os.getenv("TWITTER_ACCESS_TOKEN"),
     "TWITTER_ACCESS_SECRET": os.getenv("TWITTER_ACCESS_SECRET"),
     "MORALIS_API_KEY": os.getenv("MORALIS_API_KEY"),
-    "BOT_NAME": "Fartcat",
+    "BOT_NAME": "Fartdog",
     "SUPPORTED_CHAINS": ["ethereum", "solana", "base", "sui", "abstract"],
-    "FARTCAT_X_LAUNCH": os.getenv("FARTCAT_X_LAUNCH") == "true",
+    "FARTDOG_X_LAUNCH": os.getenv("FARTDOG_X_LAUNCH") == "true",
 }

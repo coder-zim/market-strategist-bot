@@ -17,6 +17,7 @@ application = (
     .token(CONFIG["TELEGRAM_BOT_TOKEN"])
     .build()
 )
+
 application.add_handler(CommandHandler("start", bot_instance.start))
 application.add_handler(CommandHandler("help", bot_instance.help_command))
 application.add_handler(CommandHandler("fart", bot_instance.fart))

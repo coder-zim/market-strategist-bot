@@ -35,7 +35,7 @@ class XPoster:
             return
         try:
             clean_text = re.sub(r'<[^>]+>', '', report)
-            summary = f"{CONFIG['BOT_NAME']} sniffed {address} on {chain.title()}! 💨\n{clean_text[:200]}...\nSniff it: https://t.me/FartcatBot"
+            summary = f"{CONFIG['BOT_NAME']} sniffed {address} on {chain.title()}! 💩🐶\n{clean_text[:200]}...\nSniff it: https://t.me/FartdogBot"
             self.api.update_status(summary)
             logger.info(f"Posted to X for {address} on {chain}")
         except Exception as e:

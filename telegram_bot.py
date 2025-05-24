@@ -1,113 +1,66 @@
-
-# telegram_bot.py
 import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-from telegram.constants import ParseMode
 from data_fetcher import DataFetcher
-from database import Database
 from config import CONFIG
-from x_poster import XPoster
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename='bot.log')
 logger = logging.getLogger(__name__)
 
 class TelegramBot:
     def __init__(self):
-        self.agent = DataFetcher()
-        self.db = Database()
-        self.x_poster = XPoster()
+        self.fetcher = DataFetcher()
+        self.bot_name = CONFIG["BOT_NAME"]
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        self.db.log_interaction(user_id, "start")
-        fun_fact = self.db.get_personality("fun_fact", "intro")
-        fun_fact_text = fun_fact["value"] if fun_fact else "Fartdog’s nose is locked on your wallet. Let’s sniff some contracts!"
         await update.message.reply_text(
-            f"GOOD BOY! 🐶\n"
-            f"{fun_fact_text}\n\n"
-            "👇 Here’s where I sniff around:\n\n"
-            "• Ethereum 🧠\n"
-            "• Solana 💊\n"
-            "• SUI 💦\n"
-            "• Base 🔵\n"
-            "• Abstract 🧪\n\n"
-            "Enter /fart followed by a contract address and I’ll fetch the alpha. 🦴\n"
-            "💨 I might help. I might just lift a leg on it. No promises."
+            f"🐶 {self.bot_name} is sniffing for scams! Send /fart <chain> <address> or /price <chain> <address>."
         )
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        self.db.log_interaction(user_id, "help")
         await update.message.reply_text(
-            f"📜 How to Use {CONFIG['BOT_NAME']}\n\n"
-            "• /fart <contract> - Analyze a contract address\n"
-            "  Example: /fart 0xabc123...\n\n"
-            f"✅ Supported chains: {', '.join(CONFIG['SUPPORTED_CHAINS'])}\n\n"
-            "🐾 What you get:\n"
-            "• Price, Volume, Liquidity, FDV\n"
-            "• Chart Health 🟢 🟡 🔴\n"
-            "• LP Status 🔥 (burned), ☠️ (not locked)\n"
-            "• Holders 🟢 (1000+), 🟡 (500+), 🔴 (<500)\n"
-            "• Age & Risk 🔬\n"
-            "• Quick hot take + links\n\n"
-            "If I say 'Still in the kennel'... your token’s too fresh 🧻",
-            parse_mode=ParseMode.HTML
+            "Commands:\n/fart <chain> <address> - Get token risk report\n/price <chain> <address> - Get token price\nSupported chains: ethereum, solana, base, sui, abstract"
         )
 
     async def fart(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        if not context.args:
-            self.db.log_interaction(user_id, "fart", None)
-            await update.message.reply_text("❗ Usage: /fart <contract address>")
+        if len(context.args) < 2:
+            await update.message.reply_text("Usage: /fart <chain> <address>")
             return
-        address = context.args[0].strip()
-        self.db.log_interaction(user_id, "fart", address)
-        chain = self.agent.guess_chain(address)
-        if not chain:
-            await update.message.reply_text("🐾 Couldn't guess the chain. Try another contract.")
+        chain, address = context.args[0], context.args[1]
+        if chain.lower() not in CONFIG["SUPPORTED_CHAINS"]:
+            await update.message.reply_text(f"Unsupported chain. Use: {', '.join(CONFIG['SUPPORTED_CHAINS'])}")
             return
-        result = self.agent.fetch_basic_info(address, chain)
-        await update.message.reply_text(result, parse_mode=ParseMode.HTML, disable_web_page_preview=False)
-        if CONFIG["FARTDOG_X_LAUNCH"]:
-            self.x_poster.post_report(address, chain, result)
+        try:
+            result = self.fetcher.process(address, chain)["summary"]
+            await update.message.reply_text(result, parse_mode="HTML", disable_web_page_preview=True)
+        except Exception as e:
+            logger.error(f"Error in /fart: {e}")
+            await update.message.reply_text(f"⚠️ Error sniffing {address}: {str(e)}")
 
     async def price(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        if not context.args:
-            self.db.log_interaction(user_id, "price", None)
-            await update.message.reply_text("❗ Usage: /price <ticker>")
+        if len(context.args) < 2:
+            await update.message.reply_text("Usage: /price <chain> <address>")
             return
-        ticker = context.args[0].strip()
-        self.db.log_interaction(user_id, "price", ticker)
-        await update.message.reply_text(f"Fetching price for {ticker}... (feature not implemented)")
-
-    async def hot(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        self.db.log_interaction(user_id, "hot")
-        popular = self.db.get_popular_contracts()
-        if not popular:
-            await update.message.reply_text("🐕 No hot contracts yet. Keep sniffing!")
+        chain, address = context.args[0], context.args[1]
+        if chain.lower() not in CONFIG["SUPPORTED_CHAINS"]:
+            await update.message.reply_text(f"Unsupported chain. Use: {', '.join(CONFIG['SUPPORTED_CHAINS'])}")
             return
-        response = "<b>🔥 Hottest Contracts:</b>\n\n"
-        for contract in popular:
-            response += f"• {contract['address']} ({contract['chain'].title()}): Queried {contract['query_count']} times\n"
-        response += "\nUse /fart <contract> to sniff one!"
-        await update.message.reply_text(response, parse_mode=ParseMode.HTML)
+        try:
+            result = self.fetcher.fetch_basic_info(address, chain)
+            await update.message.reply_text(result, parse_mode="HTML", disable_web_page_preview=True)
+        except Exception as e:
+            logger.error(f"Error in /price: {e}")
+            await update.message.reply_text(f"⚠️ Error fetching price for {address}: {str(e)}")
 
-# if __name__ == "__main__":
-#     import asyncio
+def main():
+    app = ApplicationBuilder().token(CONFIG["TELEGRAM_BOT_TOKEN"]).build()
+    bot = TelegramBot()
+    app.add_handler(CommandHandler("start", bot.start))
+    app.add_handler(CommandHandler("help", bot.help_command))
+    app.add_handler(CommandHandler("fart", bot.fart))
+    app.add_handler(CommandHandler("price", bot.price))
+    logger.info("Starting bot polling...")
+    app.run_polling()
 
-#     async def main():
-#         app = ApplicationBuilder().token(CONFIG["TELEGRAM_BOT_TOKEN"]).build()
-#         bot = TelegramBot()
-#         app.add_handler(CommandHandler("start", bot.start))
-#         app.add_handler(CommandHandler("help", bot.help_command))
-#         app.add_handler(CommandHandler("fart", bot.fart))
-#         app.add_handler(CommandHandler("price", bot.price))
-#         app.add_handler(CommandHandler("hot", bot.hot))
-#         await app.initialize()
-#         await app.start()
-#         await app.updater.start_polling()
-#         await app.updater.idle()
-
-#     asyncio.run(main())
+if __name__ == "__main__":
+    main()

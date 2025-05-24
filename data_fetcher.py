@@ -1,6 +1,5 @@
 import logging
 import requests
-from database import Database
 from anthropic_assistant import get_anthropic_summary
 from config import CONFIG
 from moralis_fetcher import MoralisFetcher
@@ -54,7 +53,6 @@ def rank_lp_status(is_burned):
 
 class DataFetcher:
     def __init__(self):
-        self.db = Database()
         self.name = CONFIG["BOT_NAME"]
 
     def guess_chain(self, address):
@@ -72,11 +70,6 @@ class DataFetcher:
 
     def fetch_basic_info(self, address, chain):
         logger.warning(f"FETCH STARTED FOR: {chain} - {address}")
-        cached = self.db.get_contract_data(address, chain)
-        if cached and "data" in cached:
-            logger.info(f"Using cached data for {address} on {chain}")
-            return cached["data"]
-
         try:
             url = f"https://api.dexscreener.com/latest/dex/pairs/{chain}/{address}"
             res = requests.get(url, timeout=10)
@@ -107,8 +100,7 @@ class DataFetcher:
             risk_summary = "💀 Extremely risky: No GoPlus data" if not goplus_data else "🔒 Risk data present"
 
             short_summary = get_anthropic_summary(address, chain)[:200]
-            catchphrase = self.db.get_personality("catchphrase", "general")
-            catchphrase_text = catchphrase["value"] if catchphrase else "Might be alpha, might be dognip!"
+            catchphrase_text = "Might be alpha, might be dognip!"  # Hardcoded since no DB
 
             result = (
                 f"<b>Contract:</b>\n<code>{address}</code>\n\n"
@@ -131,9 +123,6 @@ class DataFetcher:
                 f"🐾 Fartdog's Hot Take:\n{short_summary}\n\n"
                 f"🐶 {catchphrase_text}"
             )
-
-
-            self.db.save_contract_data(address, chain, result)
             return result
         except Exception as e:
             logger.exception("❌ Error in fetch_basic_info")
@@ -142,6 +131,5 @@ class DataFetcher:
     def process(self, question, chain):
         result = self.fetch_basic_info(question, chain)
         result = result.replace("<b>", "").replace("</b>", "").replace("<code>", "`").replace("</code>", "`")
-        catchphrase = self.db.get_personality("catchphrase", "general")
-        catchphrase_text = catchphrase["value"] if catchphrase else "Might be alpha, might be dognip!"
+        catchphrase_text = "Might be alpha, might be dognip!"
         return {"summary": f"{result} 🐶 {catchphrase_text}"}

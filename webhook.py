@@ -18,15 +18,14 @@ def main():
         .build()
     )
 
-    # 🔄 Wrap async handlers in .run_async so they work in sync run_polling
-    app.add_handler(CommandHandler("start", bot.start))
-    app.add_handler(CommandHandler("help", bot.help_command))
-    app.add_handler(CommandHandler("fart", bot.fart))
-    app.add_handler(CommandHandler("price", bot.price))
-    app.add_handler(CommandHandler("hot", bot.hot))
+#     app.add_handler(CommandHandler("start", bot.start))
+#     app.add_handler(CommandHandler("help", bot.help_command))
+#     app.add_handler(CommandHandler("fart", bot.fart))
+#     app.add_handler(CommandHandler("price", bot.price))
+#     app.add_handler(CommandHandler("hot", bot.hot))
 
-    app.bot.delete_webhook(drop_pending_updates=True)
-    app.run_polling(stop_signals=None)
+#     app.bot.delete_webhook(drop_pending_updates=True)
+#     app.run_polling(stop_signals=None)
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

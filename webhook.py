@@ -26,6 +26,7 @@ async def run_bot():
     await app.initialize()
     await app.start()
     await app.run_polling()
+    await app.idle()  # 👈 THIS KEEPS THE BOT RUNNING FOREVER
 
 if __name__ == "__main__":
     asyncio.run(run_bot())

@@ -110,54 +110,26 @@ class DataFetcher:
             catchphrase_text = catchphrase["value"] if catchphrase else "Might be alpha, might be dognip!"
 
             result = (
-                f"<b>Contract:</b>
-<code>{address}</code>
-
-"
-                f"<b>{name}</b>
-"
-                f"<b>Price:</b> ${price}
-"
-                f"<b>Volume:</b> {volume} | <b>Liquidity:</b> {liquidity} | <b>LP:</b> {lp_locked}
-"
-                f"<b>FDV:</b> {fdv}
-
-"
-                f"<b>FART REPORT 💨</b>
-"
-                f"Chart Health: {health}
-"
-                f"Holders: {holder_score} ({holders})
-"
-                f"Risk Analysis: See below
-"
-                f"LP: {lp_locked}
-"
-                f"Age: 🔴 (0d)
-
-"
-                f"<b>🔬 {CONFIG['BOT_NAME']} Security Check</b>
-
-"
-                f"Risk Summary:
-"
-                f"{risk_summary}
-
-"
-                f"🧠 More Tools:
-"
-                f"• Dexscreener Chart ({chart_url})
-"
-                f"• TokenSniffer (https://tokensniffer.com/token/{chain}/{address})
-"
-                f"• Bubblemaps (https://app.bubblemaps.io/?token={address})
-
-"
-                f"🐾 {CONFIG['BOT_NAME']}'s Hot Take:
-"
-                f"{short_summary}
-
-"
+                f"<b>Contract:</b><code>{address}</code>"
+                f"<b>{name}</b>"
+                f"<b>Price:</b> ${price}"
+                f"<b>Volume:</b> {volume} | <b>Liquidity:</b> {liquidity} | <b>LP:</b> {lp_locked}"
+                f"<b>FDV:</b> {fdv}"
+                f"<b>FART REPORT 💨</b>"
+                f"Chart Health: {health}"
+                f"Holders: {holder_score} ({holders})"
+                f"Risk Analysis: See below"
+                f"LP: {lp_locked}"
+                f"Age: 🔴 (0d)"
+                f"<b>🔬 {CONFIG['BOT_NAME']} Security Check</b>"
+                f"Risk Summary:"
+                f"{risk_summary}"
+                f"🧠 More Tools:"
+                f"• Dexscreener Chart ({chart_url})"
+                f"• TokenSniffer (https://tokensniffer.com/token/{chain}/{address})"
+                f"• Bubblemaps (https://app.bubblemaps.io/?token={address})"
+                f"🐾 {CONFIG['BOT_NAME']}'s Hot Take:"
+                f"{short_summary}"
                 f"😹 {catchphrase_text}"
             )
 

@@ -1,4 +1,4 @@
-# data_fetcher.py
+#data_fetcher.py
 import logging
 import requests
 from database import Database
@@ -79,22 +79,26 @@ class DataFetcher:
             return cached["data"]
 
         try:
-            # Step 1: Try direct query first
-            url = f"https://api.dexscreener.com/latest/dex/pairs/{chain}/{address}"
+            # Step 1: Search first to get correct pairAddress
+            search_url = f"https://api.dexscreener.com/latest/dex/search/?q={address}"
+            res = requests.get(search_url, timeout=10)
+            data = res.json()
+            pairs = data.get("pairs", [])
+            pair = None
+            for p in pairs:
+                if address.lower() in (p.get("pairAddress", "").lower(), p.get("baseToken", {}).get("address", "").lower()):
+                    pair = p
+                    break
+
+            if not pair:
+                return "❌ Token not found on Dexscreener."
+
+            pair_address = pair["pairAddress"]
+            chart_chain = pair.get("chainId", chain).lower()
+            url = f"https://api.dexscreener.com/latest/dex/pairs/{chart_chain}/{pair_address}"
             res = requests.get(url, timeout=10)
             data = res.json()
             pair = data.get("pair")
-
-            # Step 2: If no pair and on Solana/SUI, fallback to search
-            if not pair and chain in ["solana", "sui"]:
-                search_url = f"https://api.dexscreener.com/latest/dex/search/?q={address}"
-                res = requests.get(search_url, timeout=10)
-                data = res.json()
-                pairs = data.get("pairs", [])
-                for p in pairs:
-                    if address in (p.get("pairAddress", ""), p.get("baseToken", {}).get("address", "")):
-                        pair = p
-                        break
 
             if not pair:
                 return "❌ Token not found on Dexscreener."
@@ -109,8 +113,7 @@ class DataFetcher:
             fdv = f"${fdv_val:,}"
             lp_raw = pair.get("liquidityLocked")
             lp_locked = rank_lp_status(lp_raw is True)
-            chart_chain = pair.get("chainId", chain).lower()
-            chart_url = f"https://dexscreener.com/{chart_chain}/{pair.get('pairAddress', address)}"
+            chart_url = f"https://dexscreener.com/{chart_chain}/{pair_address}"
 
             health = rank_chart_health(liquidity_val, volume_val, fdv_val)
             holders = 0

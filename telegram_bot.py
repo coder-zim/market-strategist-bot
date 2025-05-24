@@ -1,11 +1,8 @@
+
 # telegram_bot.py
 import logging
-import asyncio
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder, CommandHandler,
-    ContextTypes
-)
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from telegram.constants import ParseMode
 from data_fetcher import DataFetcher
 from database import Database
@@ -26,7 +23,8 @@ class TelegramBot:
         fun_fact = self.db.get_personality("fun_fact", "intro")
         fun_fact_text = fun_fact["value"] if fun_fact else "Fartdog’s nose is locked on your wallet. Let’s sniff some contracts!"
         await update.message.reply_text(
-            "🐶WOOF-WOOF! GOOD BOY!🎈\n"
+            f"GOOD BOY! 🐶\n"
+            f"{fun_fact_text}\n\n"
             "👇 Here’s where I sniff around:\n\n"
             "• Ethereum 🧠\n"
             "• Solana 💊\n"
@@ -35,7 +33,7 @@ class TelegramBot:
             "• Abstract 🧪\n\n"
             "Enter /fart followed by a contract address and I’ll fetch the alpha. 🦴\n"
             "💨 I might help. I might just lift a leg on it. No promises."
-            )
+        )
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
@@ -98,17 +96,18 @@ class TelegramBot:
 
 if __name__ == "__main__":
     import asyncio
-    from telegram.ext import ApplicationBuilder
 
-    print("🐶 Fartdog bot is now sniffing contracts on Telegram...")
+    async def main():
+        app = ApplicationBuilder().token(CONFIG["TELEGRAM_BOT_TOKEN"]).build()
+        bot = TelegramBot()
+        app.add_handler(CommandHandler("start", bot.start))
+        app.add_handler(CommandHandler("help", bot.help_command))
+        app.add_handler(CommandHandler("fart", bot.fart))
+        app.add_handler(CommandHandler("price", bot.price))
+        app.add_handler(CommandHandler("hot", bot.hot))
+        await app.initialize()
+        await app.start()
+        await app.updater.start_polling()
+        await app.updater.idle()
 
-    app = ApplicationBuilder().token(CONFIG["TELEGRAM_BOT_TOKEN"]).build()
-
-    bot = TelegramBot()
-    app.add_handler(CommandHandler("start", bot.start))
-    app.add_handler(CommandHandler("help", bot.help_command))
-    app.add_handler(CommandHandler("fart", bot.fart))
-    app.add_handler(CommandHandler("price", bot.price))
-    app.add_handler(CommandHandler("hot", bot.hot))
-
-    app.run_polling()
+    asyncio.run(main())

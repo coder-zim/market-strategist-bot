@@ -1,4 +1,3 @@
-# x_poster.py
 import logging
 import tweepy
 import re
@@ -10,7 +9,7 @@ class XPoster:
     def __init__(self):
         self.api = None
         self.client = None
-        if CONFIG["FARTCAT_X_LAUNCH"] and CONFIG["TWITTER_API_KEY"]:
+        if CONFIG.get("FARTDOG_X_LAUNCH") and CONFIG.get("TWITTER_API_KEY"):
             auth = tweepy.OAuth1UserHandler(
                 CONFIG["TWITTER_API_KEY"],
                 CONFIG["TWITTER_API_SECRET"],
@@ -30,12 +29,12 @@ class XPoster:
             logger.info("X integration disabled")
 
     def post_report(self, address, chain, report):
-        if not self.api or not CONFIG["FARTDOG_X_LAUNCH"]:
+        if not self.api or not CONFIG.get("FARTDOG_X_LAUNCH"):
             logger.info("X posting skipped (disabled or not configured)")
             return
         try:
             clean_text = re.sub(r'<[^>]+>', '', report)
-            summary = f"{CONFIG['BOT_NAME']} sniffed {address} on {chain.title()}! 💩🐶\n{clean_text[:200]}...\nSniff it: https://t.me/fartdog_bot"
+            summary = f"{CONFIG['BOT_NAME']} sniffed {address} on {chain.title()}! 💨\n{clean_text[:200]}...\nSniff it: https://t.me/fartdog_bot"
             self.api.update_status(summary)
             logger.info(f"Posted to X for {address} on {chain}")
         except Exception as e:

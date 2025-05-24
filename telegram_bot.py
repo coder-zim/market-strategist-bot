@@ -1,5 +1,6 @@
 # telegram_bot.py
 import logging
+import asyncio
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder, CommandHandler,
@@ -23,18 +24,18 @@ class TelegramBot:
         user_id = update.effective_user.id
         self.db.log_interaction(user_id, "start")
         fun_fact = self.db.get_personality("fun_fact", "intro")
-        fun_fact_text = fun_fact["value"] if fun_fact else "Fartdog’s got a nose for scams and a bark for alpha!"
+        fun_fact_text = fun_fact["value"] if fun_fact else "Fartdog’s nose is locked on your wallet. Let’s sniff some contracts!"
         await update.message.reply_text(
-            f"GRRREAT! 🐶\n"
+            f"GOOD BOY! 🐶\n"
             f"{fun_fact_text}\n\n"
-            "👇 Select a chain to start sniffing:\n\n"
+            "👇 Here’s where I sniff around:\n\n"
             "• Ethereum 🧠\n"
             "• Solana 💊\n"
             "• SUI 💦\n"
             "• Base 🔵\n"
             "• Abstract 🧪\n\n"
-            "Then drop a contract address and I’ll do my thing.\n"
-            "💨 I might help. I might just bark at it. No promises."
+            "Enter /fart followed by a contract address and I’ll fetch the alpha. 🦴\n"
+            "💨 I might help. I might just lift a leg on it. No promises."
         )
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -70,7 +71,7 @@ class TelegramBot:
             return
         result = self.agent.fetch_basic_info(address, chain)
         await update.message.reply_text(result, parse_mode=ParseMode.HTML, disable_web_page_preview=False)
-        if CONFIG["FARTCAT_X_LAUNCH"]:
+        if CONFIG["FARTDOG_X_LAUNCH"]:
             self.x_poster.post_report(address, chain, result)
 
     async def price(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -97,7 +98,10 @@ class TelegramBot:
         await update.message.reply_text(response, parse_mode=ParseMode.HTML)
 
 if __name__ == "__main__":
+    import asyncio
     from telegram.ext import ApplicationBuilder
+
+    print("🐶 Fartdog bot is now sniffing contracts on Telegram...")
 
     app = ApplicationBuilder().token(CONFIG["TELEGRAM_BOT_TOKEN"]).build()
 
@@ -105,5 +109,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("start", bot.start))
     app.add_handler(CommandHandler("help", bot.help_command))
     app.add_handler(CommandHandler("fart", bot.fart))
+    app.add_handler(CommandHandler("price", bot.price))
+    app.add_handler(CommandHandler("hot", bot.hot))
 
     app.run_polling()

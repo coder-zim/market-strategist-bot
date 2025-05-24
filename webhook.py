@@ -31,8 +31,9 @@ async def webhook(request: Request):
     await application.process_update(update)
     return {"status": "ok"}
 
-if __name__ == "__main__":
-    if CONFIG["ENVIRONMENT"] == "production":
-        uvicorn.run("webhook:app", host="0.0.0.0", port=8000)
-    else:
-        asyncio.run(application.run_polling())
+# if __name__ == "__main__":
+#     if CONFIG["ENVIRONMENT"] == "production":
+#         uvicorn.run("webhook:app", host="0.0.0.0", port=8000)
+#     else:
+#         asyncio.run(app.bot.delete_webhook(drop_pending_updates=True))
+#         asyncio.run(application.run_polling())

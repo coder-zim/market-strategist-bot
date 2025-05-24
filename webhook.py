@@ -1,13 +1,13 @@
 # webhook.py
 import logging
 import asyncio
-import uvicorn
-from fastapi import FastAPI, Request
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler
-from telegram_bot import TelegramBot
+from fastapi import FastAPI, Request
 from config import CONFIG
+from telegram_bot import TelegramBot
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 app = FastAPI()
 
@@ -32,14 +32,10 @@ async def webhook(request: Request):
     return {"status": "ok"}
 
 if __name__ == "__main__":
-    if CONFIG["ENVIRONMENT"] == "production":
-        uvicorn.run("webhook:app", host="0.0.0.0", port=8000)
-    else:
-        async def run_bot():
-            await application.bot.delete_webhook(drop_pending_updates=True)
-            await application.initialize()
-            await application.start()
-            await application.updater.start_polling()
-            await application.updater.idle()
+    async def main():
+        await application.bot.delete_webhook(drop_pending_updates=True)
+        await application.initialize()
+        await application.start()
+        await application.run_polling()
 
-        asyncio.run(run_bot())
+    asyncio.run(main())

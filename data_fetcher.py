@@ -125,12 +125,13 @@ class DataFetcher:
                 f"<b>🔬 Fartdog Security Check</b>\n\n"
                 f"Risk Summary:\n{risk_summary}\n\n"
                 f"🧠 More Tools:\n"
-                f"• Dexscreener Chart ({chart_url})\n"
-                f"• TokenSniffer (https://tokensniffer.com/token/{chain}/{address})\n"
-                f"• Bubblemaps (https://app.bubblemaps.io/?token={address})\n\n"
+                f"• <a href='{chart_url}'>Dexscreener Chart</a>\n"
+                f"• <a href='https://tokensniffer.com/token/{chain}/{address}'>TokenSniffer</a>\n"
+                f"• <a href='https://app.bubblemaps.io/?token={address}'>Bubblemaps</a>\n\n"
                 f"🐾 Fartdog's Hot Take:\n{short_summary}\n\n"
-                f"😹 {catchphrase_text}"
+                f"🐶 {catchphrase_text}"
             )
+
 
             self.db.save_contract_data(address, chain, result)
             return result

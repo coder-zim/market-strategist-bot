@@ -1,0 +1,5 @@
+python-telegram-bot[rate-limiter]==20.7
+fastapi==0.115.0
+uvicorn==0.30.6
+requests==2.32.3
+python-dotenv==1.0.1

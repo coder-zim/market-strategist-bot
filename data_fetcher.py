@@ -1,3 +1,4 @@
+#data_fetcher.py
 import logging
 import requests
 from anthropic_assistant import get_anthropic_summary
@@ -15,7 +16,7 @@ def fetch_goplus_risk(chain, address):
         chain_id = chain_map.get(chain.lower())
         if not chain_id:
             return None, f"Unsupported chain: {chain}"
-        
+
         url = f"https://api.gopluslabs.io/api/v1/token_security/{chain_id}?contract_addresses={address}"
         headers = {"accept": "application/json"}
         res = requests.get(url, headers=headers, timeout=10)
@@ -70,6 +71,7 @@ class DataFetcher:
 
     def fetch_basic_info(self, address, chain):
         logger.warning(f"FETCH STARTED FOR: {chain} - {address}")
+
         try:
             url = f"https://api.dexscreener.com/latest/dex/pairs/{chain}/{address}"
             res = requests.get(url, timeout=10)
@@ -103,26 +105,27 @@ class DataFetcher:
             catchphrase_text = "Might be alpha, might be dognip!"
 
             result = (
-                f"<b>Contract:</b>\n<code>{address}</code>\n\n"
-                f"<b>{name}</b>\n"
-                f"<b>Price:</b> ${price}\n"
-                f"<b>Volume:</b> {volume} | <b>Liquidity:</b> {liquidity} | <b>LP:</b> {lp_locked}\n"
-                f"<b>FDV:</b> {fdv}\n\n"
-                f"<b>FART REPORT 💨</b>\n"
+                f"Contract:\n{address}\n\n"
+                f"{name}\n"
+                f"Price: ${price}\n"
+                f"Volume: {volume} | Liquidity: {liquidity} | LP: {lp_locked}\n"
+                f"FDV: {fdv}\n\n"
+                f"FART REPORT 💨\n"
                 f"Chart Health: {health}\n"
                 f"Holders: {holder_score} ({holders})\n"
                 f"Risk Analysis: See below\n"
                 f"LP: {lp_locked}\n"
                 f"Age: 🔴 (0d)\n\n"
-                f"<b>🔬 Fartdog Security Check</b>\n\n"
+                f"🔬 Fartdog Security Check\n\n"
                 f"Risk Summary:\n{risk_summary}\n\n"
                 f"🧠 More Tools:\n"
-                f"• <a href='{chart_url}'>Dexscreener Chart</a>\n"
-                f"• <a href='https://tokensniffer.com/token/{chain}/{address}'>TokenSniffer</a>\n"
-                f"• <a href='https://app.bubblemaps.io/?token={address}'>Bubblemaps</a>\n\n"
+                f"• Dexscreener Chart ({chart_url})\n"
+                f"• TokenSniffer (https://tokensniffer.com/token/{chain}/{address})\n"
+                f"• Bubblemaps (https://app.bubblemaps.io/?token={address})\n\n"
                 f"🐾 Fartdog's Hot Take:\n{short_summary}\n\n"
-                f"🐶 {catchphrase_text}"
+                f"😹 {catchphrase_text}"
             )
+
             return result
         except Exception as e:
             logger.exception("❌ Error in fetch_basic_info")
@@ -130,6 +133,5 @@ class DataFetcher:
 
     def process(self, question, chain):
         result = self.fetch_basic_info(question, chain)
-        result = result.replace("<b>", "").replace("</b>", "").replace("<code>", "`").replace("</code>", "`")
         catchphrase_text = "Might be alpha, might be dognip!"
         return {"summary": f"{result} 🐶 {catchphrase_text}"}

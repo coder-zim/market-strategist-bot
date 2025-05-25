@@ -1,66 +1,70 @@
+#telegram_bot.py
 import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.constants import ParseMode
 from data_fetcher import DataFetcher
 from config import CONFIG
+from x_poster import XPoster
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename='bot.log')
 logger = logging.getLogger(__name__)
 
 class TelegramBot:
     def __init__(self):
-        self.fetcher = DataFetcher()
-        self.bot_name = CONFIG["BOT_NAME"]
+        self.agent = DataFetcher()
+        self.x_poster = XPoster()
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        fun_fact_text = "Fartdog’s nose is locked on your wallet. Let’s sniff some contracts!"
         await update.message.reply_text(
-            f"🐶 {self.bot_name} is sniffing for scams! Send /fart <chain> <address> or /price <chain> <address>."
+            f"GOOD BOY! 🐶\n"
+            f"{fun_fact_text}\n\n"
+            "🔻 Here’s where I sniff around:\n\n"
+            "• Ethereum 🧠\n"
+            "• Solana 💊\n"
+            "• SUI 💦\n"
+            "• Base 🔵\n"
+            "• Abstract 🧪\n\n"
+            "Enter /fart followed by a contract address and I’ll fetch the alpha. 🪴\n"
+            "💨 I might help. I might just lift a leg on it. No promises."
         )
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
-            "Commands:\n/fart <chain> <address> - Get token risk report\n/price <chain> <address> - Get token price\nSupported chains: ethereum, solana, base, sui, abstract"
+            f"📜 How to Use {CONFIG['BOT_NAME']}\n\n"
+            "• /fart <contract> - Analyze a contract address\n"
+            "  Example: /fart 0xabc123...\n\n"
+            f"✅ Supported chains: {', '.join(CONFIG['SUPPORTED_CHAINS'])}\n\n"
+            "🐾 What you get:\n"
+            "• Price, Volume, Liquidity, FDV\n"
+            "• Chart Health 🟢 🟡 🔴\n"
+            "• LP Status 🔥 (burned), ☠️ (not locked)\n"
+            "• Holders 🟢 (1000+), 🟡 (500+), 🔴 (<500)\n"
+            "• Age & Risk 🔬\n"
+            "• Quick hot take + links\n\n"
+            "If I say 'Still in the kennel'... your token’s too fresh 🧻"
         )
 
     async def fart(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if len(context.args) < 2:
-            await update.message.reply_text("Usage: /fart <chain> <address>")
+        if not context.args:
+            await update.message.reply_text("❗ Usage: /fart <contract address>")
             return
-        chain, address = context.args[0], context.args[1]
-        if chain.lower() not in CONFIG["SUPPORTED_CHAINS"]:
-            await update.message.reply_text(f"Unsupported chain. Use: {', '.join(CONFIG['SUPPORTED_CHAINS'])}")
+        address = context.args[0].strip()
+        chain = self.agent.guess_chain(address)
+        if not chain:
+            await update.message.reply_text("🐾 Couldn't guess the chain. Try another contract.")
             return
-        try:
-            result = self.fetcher.process(address, chain)["summary"]
-            await update.message.reply_text(result, parse_mode="HTML", disable_web_page_preview=True)
-        except Exception as e:
-            logger.error(f"Error in /fart: {e}")
-            await update.message.reply_text(f"⚠️ Error sniffing {address}: {str(e)}")
+        result = self.agent.fetch_basic_info(address, chain)
+        await update.message.reply_text(result, disable_web_page_preview=False)
+        if CONFIG["FARTDOG_X_LAUNCH"]:
+            self.x_poster.post_report(address, chain, result)
 
     async def price(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if len(context.args) < 2:
-            await update.message.reply_text("Usage: /price <chain> <address>")
+        if not context.args:
+            await update.message.reply_text("❗ Usage: /price <ticker>")
             return
-        chain, address = context.args[0], context.args[1]
-        if chain.lower() not in CONFIG["SUPPORTED_CHAINS"]:
-            await update.message.reply_text(f"Unsupported chain. Use: {', '.join(CONFIG['SUPPORTED_CHAINS'])}")
-            return
-        try:
-            result = self.fetcher.fetch_basic_info(address, chain)
-            await update.message.reply_text(result, parse_mode="HTML", disable_web_page_preview=True)
-        except Exception as e:
-            logger.error(f"Error in /price: {e}")
-            await update.message.reply_text(f"⚠️ Error fetching price for {address}: {str(e)}")
+        ticker = context.args[0].strip()
+        await update.message.reply_text(f"Fetching price for {ticker}... (feature not implemented)")
 
-def main():
-    app = ApplicationBuilder().token(CONFIG["TELEGRAM_BOT_TOKEN"]).build()
-    bot = TelegramBot()
-    app.add_handler(CommandHandler("start", bot.start))
-    app.add_handler(CommandHandler("help", bot.help_command))
-    app.add_handler(CommandHandler("fart", bot.fart))
-    app.add_handler(CommandHandler("price", bot.price))
-    logger.info("Starting bot polling...")
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+    async def hot(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await update.message.reply_text("🔥 No data yet, I'm sniffin' around.")

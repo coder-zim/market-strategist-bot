@@ -1,4 +1,4 @@
-# chain_fallback.py
+#chain_fallback.py
 import os
 import requests
 
@@ -15,51 +15,61 @@ HEADERS = {
 
 def fallback_fetch(chain, contract):
     if chain == "solana":
-        return fetch_from_birdeye_solana(contract)
+        result = fetch_from_solana_solscan(contract)
+        return result if result else fetch_from_birdeye_solana(contract)
     elif chain == "sui":
         return fetch_from_birdeye_sui(contract)
     elif chain == "ethereum":
-        return fetch_from_etherscan(contract)
+        result = fetch_from_etherscan_verified(contract)
+        return result if result else fetch_from_etherscan(contract)
     elif chain == "base":
-        return fetch_from_basescan(contract)
+        result = fetch_from_basescan_verified(contract)
+        return result if result else fetch_from_basescan(contract)
     elif chain == "abstract":
         return {"name": "Unknown", "price": "0", "volume": "0", "liquidity": "0", "fdv": "0", "lp_burned": "☠️", "dex_link": "", "fart_note": "🌀 Abstract layer... results may vary."}
     return None
 
+def fetch_from_solana_solscan(contract):
+    try:
+        url = f"https://public-api.solscan.io/token/meta?tokenAddress={contract}"
+        r = requests.get(url, headers={"accept": "application/json"})
+        if r.status_code != 200:
+            return None
+        data = r.json()
+        return {
+            "name": data.get("tokenName", "Unknown"),
+            "price": data.get("priceUsdt", "0"),
+            "volume": "0",
+            "liquidity": "0",
+            "fdv": data.get("marketCap", "0"),
+            "holders": data.get("holder", "N/A"),
+            "lp_burned": "☠️",
+            "dex_link": f"https://solscan.io/token/{contract}",
+            "fart_note": "🔍 Sniffed via Solscan.io"
+        }
+    except Exception as e:
+        print("Solscan error:", e)
+        return None
+
 def fetch_from_birdeye_solana(contract):
     try:
-        # Fetch token info from Birdeye
         url = f"https://public-api.birdeye.so/public/token/{contract}"
         r = requests.get(url, headers={"X-API-KEY": BIRDEYE_API_KEY})
         data = r.json().get("data", {})
-
-        # Fetch holder count from SolScan
-        holders = "N/A"
-        try:
-            solscan_url = f"https://public-api.solscan.io/token/holders?tokenAddress={contract}&limit=1"
-            solscan_r = requests.get(solscan_url, headers={"accept": "application/json", "token": SOLSCAN_API_KEY})
-            if solscan_r.status_code == 200:
-                solscan_data = solscan_r.json()
-                holders = solscan_data.get("total", "N/A")
-        except Exception as e:
-            print("SolScan holders error:", e)
-
         return {
             "name": data.get("symbol", "Unknown"),
             "price": data.get("value", "0"),
             "volume": data.get("volume24hUsd", "0"),
             "liquidity": data.get("liquidity", "0"),
             "fdv": data.get("marketCap", "0"),
-            "holders": holders,
+            "holders": "N/A",
             "lp_burned": "🔥",
             "dex_link": f"https://birdeye.so/token/{contract}?chain=solana",
-            "fart_note": "💨 Fetched with Birdeye + SolScan for SOL"
+            "fart_note": "💨 Backup sniff from Birdeye"
         }
-
     except Exception as e:
         print("Birdeye Solana error:", e)
         return None
-
 
 def fetch_from_birdeye_sui(contract):
     try:
@@ -72,12 +82,33 @@ def fetch_from_birdeye_sui(contract):
             "volume": data.get("volume24hUsd", "0"),
             "liquidity": data.get("liquidity", "0"),
             "fdv": data.get("marketCap", "0"),
+            "holders": "N/A",
             "lp_burned": "🔥",
             "dex_link": f"https://birdeye.so/token/{contract}?chain=sui",
-            "fart_note": "💨 Fetched with Birdeye for SUI"
+            "fart_note": "💨 Sniffed with Birdeye for SUI"
         }
     except Exception as e:
         print("Birdeye SUI error:", e)
+        return None
+
+def fetch_from_etherscan_verified(contract):
+    try:
+        url = f"https://api.etherscan.io/api?module=contract&action=getsourcecode&address={contract}&apikey={ETHERSCAN_API_KEY}"
+        r = requests.get(url, headers=HEADERS)
+        data = r.json().get("result", [{}])[0]
+        return {
+            "name": data.get("ContractName", "Unknown"),
+            "price": "0",
+            "volume": "0",
+            "liquidity": "0",
+            "fdv": "0",
+            "holders": "N/A",
+            "lp_burned": "☠️",
+            "dex_link": f"https://etherscan.io/token/{contract}",
+            "fart_note": "📜 Verified via Etherscan Sourcecode API"
+        }
+    except Exception as e:
+        print("Verified Etherscan error:", e)
         return None
 
 def fetch_from_etherscan(contract):
@@ -85,19 +116,39 @@ def fetch_from_etherscan(contract):
         url = f"https://api.etherscan.io/api?module=token&action=tokeninfo&contractaddress={contract}&apikey={ETHERSCAN_API_KEY}"
         r = requests.get(url, headers=HEADERS)
         data = r.json().get("result", {})
-        deployer = get_deployer_info("ethereum", contract)
         return {
-            "name": data.get("symbol", "Unknown"),
+            'name': data.get("symbol", "Unknown"),
             "price": "0",
             "volume": "0",
             "liquidity": "0",
             "fdv": data.get("fully_diluted_market_cap", "0"),
+            "holders": "N/A",
             "lp_burned": "☠️",
             "dex_link": f"https://etherscan.io/token/{contract}",
-            "fart_note": f"📦 Fetched with Etherscan | Deployer: {deployer}"
+            "fart_note": "📦 Basic fetch from Etherscan"
         }
     except Exception as e:
-        print("Etherscan error:", e)
+        print("Etherscan fallback error:", e)
+        return None
+
+def fetch_from_basescan_verified(contract):
+    try:
+        url = f"https://api.basescan.org/api?module=contract&action=getsourcecode&address={contract}&apikey={BASESCAN_API_KEY}"
+        r = requests.get(url, headers=HEADERS)
+        data = r.json().get("result", [{}])[0]
+        return {
+            "name": data.get("ContractName", "Unknown"),
+            "price": "0",
+            "volume": "0",
+            "liquidity": "0",
+            "fdv": "0",
+            "holders": "N/A",
+            "lp_burned": "☠️",
+            "dex_link": f"https://basescan.org/token/{contract}",
+            "fart_note": "📜 Verified via Basescan Sourcecode API"
+        }
+    except Exception as e:
+        print("Verified Basescan error:", e)
         return None
 
 def fetch_from_basescan(contract):
@@ -105,53 +156,17 @@ def fetch_from_basescan(contract):
         url = f"https://api.basescan.org/api?module=token&action=tokeninfo&contractaddress={contract}&apikey={BASESCAN_API_KEY}"
         r = requests.get(url, headers=HEADERS)
         data = r.json().get("result", {})
-        deployer = get_deployer_info("base", contract)
         return {
             "name": data.get("symbol", "Unknown"),
             "price": "0",
             "volume": "0",
             "liquidity": "0",
             "fdv": data.get("fully_diluted_market_cap", "0"),
+            "holders": "N/A",
             "lp_burned": "☠️",
             "dex_link": f"https://basescan.org/token/{contract}",
-            "fart_note": f"📦 Fetched with Basescan | Deployer: {deployer}"
+            "fart_note": "📦 Basic fetch from Basescan"
         }
     except Exception as e:
-        print("Basescan error:", e)
+        print("Basescan fallback error:", e)
         return None
-
-def get_deployer_info(chain, contract):
-    try:
-        query = {
-            "query": """
-            query ($network: EthereumNetwork!, $address: String!) {
-              ethereum(network: $network) {
-                smartContractCalls(
-                  smartContractAddress: {is: $address}
-                  smartContractMethod: {is: "constructor"}
-                ) {
-                  caller {
-                    address
-                  }
-                  block {
-                    timestamp {
-                      time(format: "%Y-%m-%d")
-                    }
-                  }
-                }
-              }
-            }
-            """,
-            "variables": {
-                "network": chain,
-                "address": contract
-            }
-        }
-        r = requests.post("https://graphql.bitquery.io", json=query, headers={"X-API-KEY": BITQUERY_API_KEY})
-        result = r.json()
-        calls = result.get("data", {}).get("ethereum", {}).get("smartContractCalls", [])
-        if calls:
-            return f"{calls[0]['caller']['address']} on {calls[0]['block']['timestamp']['time']}"
-    except Exception as e:
-        print("Bitquery deployer fetch error:", e)
-    return "unknown"

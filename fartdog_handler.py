@@ -89,6 +89,7 @@ async def send_fart_report(update: Update, context: ContextTypes.DEFAULT_TYPE, c
         f"📊 24h Volume: ${data['volume']}\n"
         f"💧 Liquidity: ${data['liquidity']} | LP: {data['lp_burned']}\n"
         f"📈 FDV: ${data['fdv']}\n"
+        f"👥 Holders: {data['holders']}\n"
         f"🔗 {data['dex_link']}\n\n"
         f"{data['fart_note']}\n"
         f"👃 Wanna sniff more? Paste another contract."

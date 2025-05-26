@@ -37,6 +37,7 @@ def fetch_from_birdeye_solana(contract):
             "volume": data.get("volume24hUsd", "0"),
             "liquidity": data.get("liquidity", "0"),
             "fdv": data.get("marketCap", "0"),
+            "holders": data.get("holders", "N/A"),
             "lp_burned": "🔥",  # Assume burned for fallback
             "dex_link": f"https://birdeye.so/token/{contract}?chain=solana",
             "fart_note": "💨 Fetched with Birdeye for Solana"
@@ -44,6 +45,7 @@ def fetch_from_birdeye_solana(contract):
     except Exception as e:
         print("Birdeye Solana error:", e)
         return None
+
 
 def fetch_from_birdeye_sui(contract):
     try:

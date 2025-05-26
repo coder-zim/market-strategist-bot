@@ -11,10 +11,12 @@ def parse_data(data, fallback=False):
         "volume": data.get("volume", {}).get("h24", "Unknown") if not fallback else data.get("volume", "0"),
         "liquidity": data.get("liquidity", {}).get("usd", "Unknown") if not fallback else data.get("liquidity", "0"),
         "fdv": data.get("fdv", "Unknown") if not fallback else data.get("fdv", "0"),
+        "holders": data.get("holders", "Unknown") if fallback else "N/A",
         "lp_burned": "🔥" if not fallback and data.get("liquidity", {}).get("locked") else data.get("lp_burned", "💀"),
         "dex_link": f"https://dexscreener.com/{data.get('chainId')}/{data.get('pairAddress')}" if not fallback else data.get("dex_link", ""),
         "fart_note": fart_note
     }
+
 
 def fetch_token_data(chain, contract):
     headers = CONFIG.get("DEFAULT_HEADERS", {})

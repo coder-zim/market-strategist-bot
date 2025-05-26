@@ -83,6 +83,7 @@ async def send_fart_report(update: Update, context: ContextTypes.DEFAULT_TYPE, c
         return MENU
 
     reply = (
+        f"📦 Contract Address:\n```{contract}```\n\n"
         f"{data['name']} on {chain.upper()}\n"
         f"💸 Price: ${data['price']}\n"
         f"📊 24h Volume: ${data['volume']}\n"
@@ -96,7 +97,7 @@ async def send_fart_report(update: Update, context: ContextTypes.DEFAULT_TYPE, c
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton(f"Chain: {chain.title()} 🔄", callback_data="switch_chain")]
     ])
-    await update.message.reply_text(reply, reply_markup=keyboard)
+    await update.message.reply_text(reply, reply_markup=keyboard, parse_mode="Markdown")
     return MENU
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):

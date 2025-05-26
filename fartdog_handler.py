@@ -29,7 +29,7 @@ def get_chain_keyboard():
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("🔥 /start was triggered")
     await update.message.reply_text(
-        "😼 Yo, I’m Fartdog.\nI sniff contracts and roast charts.\nYou degen, I judge. That’s the deal. 💩\n\nEnter /fart followed by a contract address to generate a Fart Report.\n👇 First, pick a chain:",
+        "😼 Yo, I’m Fartdog.\nI sniff contracts and roast charts.\nYou degen, I judge. That’s the deal. 💩\n\nPaste a contract address to generate a Fart Report.\n👇 First, pick a chain:",
         reply_markup=get_chain_keyboard()
     )
     return MENU
@@ -40,7 +40,7 @@ async def handle_chain_select(update: Update, context: ContextTypes.DEFAULT_TYPE
     _, chain = query.data.split(":")
     context.user_data["chain"] = chain
     await query.edit_message_text(
-        text=f"✅ Sniff mode set to: {chain.title()}\n\nNow enter /fart followed by a contract address.\n👇",
+        text=f"✅ Sniff mode set to: {chain.title()}\n\nNow paste a contract address.\n👇",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton(f"Chain: {chain.title()} 🔄", callback_data="switch_chain")]
         ])
@@ -53,19 +53,6 @@ async def switch_chain(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text("🐾 Pick a new chain to sniff:", reply_markup=get_chain_keyboard())
     return MENU
 
-async def handle_fart(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chain = context.user_data.get("chain")
-    if not chain:
-        await update.message.reply_text("👃 Pick a chain first using /start.")
-        return MENU
-
-    contract = " ".join(context.args).strip()
-    if not contract:
-        await update.message.reply_text("⚠️ Use: /fart <contract_address>")
-        return MENU
-
-    return await send_fart_report(update, context, contract, chain)
-
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chain = context.user_data.get("chain")
     if not chain:
@@ -73,6 +60,16 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return MENU
 
     contract = update.message.text.strip()
+
+    if len(contract) < 15 or any(x in contract for x in [" ", "\n", ",", ";"]):
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton(f"Chain: {chain.title()} 🔄", callback_data="switch_chain")]
+        ])
+        await update.message.reply_text(
+            "⚠️ Invalid input.\nPaste a valid contract address or click below to switch chains. 🪠",
+            reply_markup=keyboard
+        )
+        return MENU
     return await send_fart_report(update, context, contract, chain)
 
 async def send_fart_report(update: Update, context: ContextTypes.DEFAULT_TYPE, contract: str, chain: str):
@@ -93,7 +90,7 @@ async def send_fart_report(update: Update, context: ContextTypes.DEFAULT_TYPE, c
         f"📈 FDV: ${data['fdv']}\n"
         f"🔗 {data['dex_link']}\n\n"
         f"{data['fart_note']}\n"
-        f"👃 Wanna sniff more? Use /fart <contract> again."
+        f"👃 Wanna sniff more? Paste another contract."
     )
 
     keyboard = InlineKeyboardMarkup([
@@ -113,7 +110,6 @@ def get_conversation_handler():
             MENU: [
                 CallbackQueryHandler(handle_chain_select, pattern="^select_chain:"),
                 CallbackQueryHandler(switch_chain, pattern="^switch_chain$"),
-                CommandHandler("fart", handle_fart),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text),
             ]
         },

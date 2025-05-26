@@ -83,7 +83,7 @@ async def send_fart_report(update: Update, context: ContextTypes.DEFAULT_TYPE, c
         return MENU
 
     reply = (
-        f"📦 Contract Address:\n```{contract}```\n\n"
+        f"📦 Contract Address:\n`{contract}`\n\n"
         f"{data['name']} on {chain.upper()}\n"
         f"💸 Price: ${data['price']}\n"
         f"📊 24h Volume: ${data['volume']}\n"

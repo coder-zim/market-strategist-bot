@@ -28,20 +28,34 @@ def fallback_fetch(chain, contract):
 
 def fetch_from_birdeye_solana(contract):
     try:
+        # Fetch token info from Birdeye
         url = f"https://public-api.birdeye.so/public/token/{contract}"
         r = requests.get(url, headers={"X-API-KEY": BIRDEYE_API_KEY})
         data = r.json().get("data", {})
+
+        # Fetch holder count from SolScan
+        holders = "N/A"
+        try:
+            solscan_url = f"https://public-api.solscan.io/token/holders?tokenAddress={contract}&limit=1"
+            solscan_r = requests.get(solscan_url, headers={"accept": "application/json", "token": SOLSCAN_API_KEY})
+            if solscan_r.status_code == 200:
+                solscan_data = solscan_r.json()
+                holders = solscan_data.get("total", "N/A")
+        except Exception as e:
+            print("SolScan holders error:", e)
+
         return {
             "name": data.get("symbol", "Unknown"),
             "price": data.get("value", "0"),
             "volume": data.get("volume24hUsd", "0"),
             "liquidity": data.get("liquidity", "0"),
             "fdv": data.get("marketCap", "0"),
-            "holders": data.get("holders", "N/A"),
-            "lp_burned": "🔥",  # Assume burned for fallback
+            "holders": holders,
+            "lp_burned": "🔥",
             "dex_link": f"https://birdeye.so/token/{contract}?chain=solana",
-            "fart_note": "💨 Fetched with Birdeye for Solana"
+            "fart_note": "💨 Fetched with Birdeye + SolScan for SOL"
         }
+
     except Exception as e:
         print("Birdeye Solana error:", e)
         return None
